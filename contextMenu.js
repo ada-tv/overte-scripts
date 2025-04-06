@@ -1,0 +1,534 @@
+// SPDX-License-Identifier: CC0-1.0
+
+const CONTEXT_MENU_PUBLIC = false;
+const CONTEXT_MENU_PARENTED = true;
+// Roboto
+// Inconsolata
+// Courier
+// Timeless
+// https://*
+const CONTEXT_MENU_FONT = "Roboto";
+const MENU_TOGGLE_ACTION = Controller.Standard.RightPrimaryThumb;
+const TARGET_HOVER_ACTION = Controller.Standard.RT;
+
+const CLICK_FUNC_CHANNEL = "net.thingvellir.context-menu.click";
+const ACTIONS_CHANNEL = "net.thingvellir.context-menu.actions";
+const MAIN_CHANNEL = "net.thingvellir.context-menu";
+
+const EMPTY_FUNCTION = () => {};
+
+const SELF_ACTIONS = [
+	(_target, _isAvatar) => {
+		return {
+			text: MyAvatar.getCollisionsEnabled() ? "[   ] Noclip" : "[X] Noclip",
+			textColor: [127, 255, 255],
+			clickFunc: (target, menuItemEntity) => MyAvatar.setCollisionsEnabled(!MyAvatar.getCollisionsEnabled()),
+		};
+	},
+	(_target, _isAvatar) => {
+		return {
+			text: MyAvatar.getOtherAvatarsCollisionsEnabled() ? "[X] Avatar collisions" : "[   ] Avatar collisions",
+			textColor: [127, 255, 255],
+			clickFunc: (target, menuItemEntity) => MyAvatar.setOtherAvatarsCollisionsEnabled(!MyAvatar.getOtherAvatarsCollisionsEnabled()),
+		};
+	},
+];
+
+const OBJECT_ACTIONS = [
+	(ent, isAvatar) => {
+		if (isAvatar) { return; }
+		const locked = Uuid.isNull(ent) || Entities.getEntityProperties(ent, "locked").locked;
+
+		return {
+			text: "Delete",
+			textColor: locked ? [64, 64, 64] : [255, 0, 0],
+			backgroundColor: locked ? [128, 128, 128] : [0, 0, 0],
+			clickFunc: locked ? EMPTY_FUNCTION : (ent => Entities.deleteEntity(ent)),
+		};
+	},
+	(ent, isAvatar) => {
+		if (isAvatar) { return; }
+		const props = Entities.getEntityProperties(ent, ["locked", "cloneable", "grab"]);
+		const locked = Uuid.isNull(ent) || props.locked || !(props.cloneable && props.grab?.grabbable);
+
+		return {
+			text: "Clone",
+			textColor: locked ? [64, 64, 64] : [0, 255, 0],
+			backgroundColor: locked ? [128, 128, 128] : [0, 0, 0],
+			clickFunc: locked ? EMPTY_FUNCTION : (ent => Entities.cloneEntity(ent)),
+		};
+	},
+];
+
+const AVATAR_ACTIONS = [
+	(target, isAvatar) => {
+		if (!isAvatar) { return; }
+		if (target === MyAvatar.sessionUUID) { return; }
+
+		const avatar = AvatarList.getAvatar(target);
+		if (!avatar || Object.keys(avatar).length === 0) { return; }
+
+		if (avatar in Audio.soloList) { return; }
+
+		return {
+			text: "Enable audio priority",
+			textColor: [255, 255, 0],
+			clickFunc: (target, _menuItemEntity) => Audio.soloList.push(target),
+		};
+	},
+	(target, isAvatar) => {
+		if (!isAvatar) { return; }
+		if (target === MyAvatar.sessionUUID) { return; }
+
+		const avatar = AvatarList.getAvatar(target);
+		if (!avatar || Object.keys(avatar).length === 0) { return; }
+
+		if (!(avatar in Audio.soloList)) { return; }
+
+		return {
+			text: "Disable audio priority",
+			textColor: [255, 255, 0],
+			clickFunc: (target, _menuItemEntity) => {
+				Audio.soloList = Audio.soloList.filter(item => item !== push(target));
+			},
+		};
+	},
+];
+
+const ROOT_ACTIONS = [
+	(_target, _isAvatar) => ({
+		text: "My Avatar",
+		textColor: [127, 255, 255],
+		keepMenuOpen: true,
+		submenu: "_SELF",
+	}),
+	(target, isAvatar) => {
+		if (isAvatar) { return; }
+		if (!Entities.canRez() || Uuid.isNull(target)) { return; }
+
+		return {
+			text: "Object",
+			textColor: [0, 255, 0],
+			keepMenuOpen: true,
+			submenu: "_OBJECT",
+		};
+	},
+	(target, isAvatar) => {
+		if (!isAvatar) { return; }
+
+		const avatar = AvatarList.getAvatar(target);
+		if (!avatar || Object.keys(avatar).length === 0) { return; }
+
+		return {
+			text: avatar.displayName,
+			textColor: [255, 255, 0],
+			keepMenuOpen: true,
+			submenu: "_AVATAR",
+		};
+	},
+];
+
+let registeredActionSets = {
+	"_ROOT": [...ROOT_ACTIONS],
+	"_SELF": [...SELF_ACTIONS],
+	"_OBJECT": [...OBJECT_ACTIONS],
+	"_AVATAR": [...AVATAR_ACTIONS],
+};
+let registeredActionSetParents = {};
+
+const targetingPick = Picks.createPick(PickType.Ray, {
+	enabled: true,
+	filter: Picks.PICK_DOMAIN_ENTITIES | Picks.PICK_AVATAR_ENTITIES | Picks.PICK_LOCAL_ENTITIES | Picks.PICK_INCLUDE_NONCOLLIDABLE | Picks.PICK_AVATARS,
+	maxDistance: 20 * MyAvatar.getAvatarScale(),
+	joint: HMD.active ? "_CAMERA_RELATIVE_CONTROLLER_RIGHTHAND" : "Mouse",
+});
+
+let currentMenuOpen = false;
+let currentMenuEntities = new Set();
+let currentMenuActionFuncs = [];
+let currentMenuTarget = Uuid.NULL;
+let currentMenuTargetIsAvatar = false;
+let currentMenuInSubmenu = false;
+let currentMenuTargetLine = Uuid.NULL;
+
+function ContextMenu_DeleteMenu() {
+	currentMenuEntities.forEach((_, e) => Entities.deleteEntity(e));
+	currentMenuEntities.clear();
+	currentMenuActionFuncs = [];
+	currentMenuOpen = false;
+	currentMenuInSubmenu = false;
+	currentMenuTargetIsAvatar = false;
+	currentMenuTarget = Uuid.NULL;
+	currentMenuTargetLine = Uuid.NULL;
+	Controller.releaseEntityClickEvents();
+}
+
+function ContextMenu_EntityClick(eid, event) {
+	if (!currentMenuEntities.has(eid)) { return; }
+
+	currentMenuInSubmenu = false;
+
+	try {
+		const func = JSON.parse(Entities.getEntityProperties(eid, "userData").userData).actionFunc;
+		currentMenuActionFuncs[func][0](currentMenuTarget, eid);
+		if (!currentMenuActionFuncs[func][1] && !currentMenuInSubmenu) {
+			ContextMenu_DeleteMenu();
+		}
+	} catch (e) {}
+}
+
+function ContextMenu_FindTarget() {
+	currentMenuTargetIsAvatar = false;
+
+	const ray = Picks.getPrevPickResult(targetingPick);
+	if (!ray.intersects) {
+		currentMenuTarget = Uuid.NULL;
+		return;
+	}
+
+	if (ray.type === 3) {
+		currentMenuTarget = ray.objectID;
+		currentMenuTargetIsAvatar = true;
+	} else {
+		currentMenuTarget = ray.objectID;
+	}
+}
+
+function ContextMenu_OpenActions(actions) {
+	currentMenuEntities.forEach((_, e) => Entities.deleteEntity(e));
+	currentMenuTargetLine = Uuid.NULL;
+	currentMenuActionFuncs = [];
+
+	currentMenuInSubmenu = true;
+
+	Controller.captureEntityClickEvents();
+
+	const scale = MyAvatar.getAvatarScale();
+	const myAvatar = MyAvatar.sessionUUID;
+
+	let actionEnts = [];
+	let spawnDist;
+	if (HMD.active) {
+		spawnDist = 1.0;
+	} else {
+		const remap = (low1, high1, low2, high2, value) => low2 + (value - low1) * (high2 - low2) / (high1 - low1);
+		spawnDist = remap(20, 130, 1.2, 0.25, Camera.frustum.fieldOfView);
+	}
+	let origin = Vec3.sum(
+		Camera.position,
+		Vec3.multiplyQbyV(
+			Camera.orientation,
+			[0, 0, -spawnDist * scale]
+		)
+	);
+	let angle = Quat.lookAtSimple(Camera.position, origin);
+
+	let activeActions = [];
+
+	for (const action of actions) {
+		let actionData = action(currentMenuTarget, currentMenuTargetIsAvatar);
+
+		if (!actionData || Object.keys(actionData).length === 0) { continue; }
+		activeActions.push(actionData);
+	}
+
+	let yPos = Math.min(1, activeActions.length) * 0.03 * scale;
+	let bgHeight = (yPos / 2.0) - (0.03 * scale);
+
+	if (!Uuid.isNull(currentMenuTarget)) {
+		let targetPos;
+		if (currentMenuTargetIsAvatar) {
+			targetPos = AvatarList.getAvatar(currentMenuTarget).position;
+		} else {
+			targetPos = Entities.getEntityProperties(currentMenuTarget, "position").position;
+		}
+
+		currentMenuTargetLine = Entities.addEntity({
+			type: "PolyLine",
+			grab: {grabbable: false},
+			parentID: myAvatar,
+			position: origin,
+			linePoints: [
+				[0, 0, 0],
+				[targetPos.x - origin.x, targetPos.y - origin.y, targetPos.z - origin.z],
+			],
+			normals: [
+				[0, 0, 1],
+				[0, 0, 1],
+			],
+			strokeWidths: [0.1, 0.0],
+			color: [127, 255, 255],
+			glow: true,
+			faceCamera: true,
+		}, CONTEXT_MENU_PUBLIC ? "avatar" : "local");
+		currentMenuEntities.add(currentMenuTargetLine);
+	}
+
+	let titleText;
+	if (currentMenuTargetIsAvatar) {
+		const data = AvatarList.getAvatar(currentMenuTarget);
+		if (data.displayName === "unnamed" || data.displayName == "NoName") {
+			titleText = `Avatar (${currentMenuTarget})`;
+		} else {
+			titleText = `Avatar (${data.displayName})`;
+		}
+	} else if (currentMenuTarget) {
+		const data = Entities.getEntityProperties(currentMenuTarget, ["type", "name"]);
+		const type = data.type ?? "UNKNOWN";
+		if (data.name) {
+			titleText = `${type} (${data.name})`;
+		} else {
+			titleText = `${type}`;
+		}
+	} else {
+		titleText = "Self";
+	}
+	actionEnts.push({
+		grab: {grabbable: false},
+		type: "Text",
+		position: Vec3.sum(origin, Vec3.multiplyQbyV(angle, [0, yPos, 0])),
+		rotation: angle,
+		renderLayer: "front",
+		dimensions: [0.3 * scale, 0.025 * scale, 0.01 * scale],
+		text: titleText,
+		textColor: [230, 230, 230],
+		backgroundColor: [0, 0, 0],
+		backgroundAlpha: 0.9,
+		unlit: true,
+		lineHeight: 0.015 * scale,
+		verticalAlignment: "center",
+		alignment: "center",
+		triggerable: false,
+	});
+	yPos -= 0.04 * scale;
+	bgHeight += 0.04;
+
+	for (let i = 0; i < activeActions.length; i++) {
+		let action = activeActions[i];
+
+		// the menu item is only valid for a target entity
+		if (action.requiredTargets !== undefined && !(currentMenuTarget in action.requiredTargets)) {
+			continue;
+		}
+
+		let pos = Vec3.sum(origin, Vec3.multiplyQbyV(angle, [0, yPos, 0]));
+		actionEnts.push({
+			grab: {grabbable: false},
+			type: "Text",
+			position: pos,
+			rotation: angle,
+			renderLayer: "front",
+			dimensions: [0.3 * scale, 0.05 * scale, 0.0001 * scale],
+			text: action.text,
+			textColor: action.textColor ?? [255, 255, 255],
+			backgroundColor: action.backgroundColor ?? [0, 0, 0],
+			backgroundAlpha: action.backgroundAlpha ?? 0.8,
+			unlit: true,
+			lineHeight: 0.025 * scale,
+			verticalAlignment: "center",
+			alignment: "left",
+			triggerable: true,
+			leftMargin: 0.05 * scale,
+			rightMargin: 0.05 * scale,
+			userData: JSON.stringify({actionFunc: i}),
+		});
+		if (action.iconImage) {
+			let pos = Vec3.sum(origin, Vec3.multiplyQbyV(angle, [-0.125 * scale, yPos, 0.0001]));
+			actionEnts.push({
+				grab: {grabbable: false},
+				type: "Image",
+				position: pos,
+				rotation: angle,
+				renderLayer: "front",
+				dimensions: [0.03 * scale, 0.03 * scale, 0.01 * scale],
+				imageURL: action.iconImage,
+				emissive: true,
+				userData: JSON.stringify({actionFunc: i}),
+			});
+		}
+		let clickFunc = EMPTY_FUNCTION;
+		if (action.submenu) {
+			const actionSet = registeredActionSets[action.submenu];
+			if (actionSet) {
+				clickFunc = (_target, _isAvatar) => ContextMenu_OpenActions(actionSet);
+			} else {
+				print(`Unregistered action set "${action.submenu}"!`);
+			}
+		} else if (action.clickFunc) {
+			clickFunc = action.clickFunc;
+		} else if (action.remoteClickFunc) {
+			clickFunc = (target, isAvatar) => {
+				Messages.sendMessage(CLICK_FUNC_CHANNEL, JSON.stringify({
+					funcName: action.remoteClickFunc,
+					targetEntity: target,
+					isTargetAvatar: isAvatar,
+				}));
+			};
+		} else if (action.localClickFunc) {
+			clickFunc = (target, isAvatar) => {
+				Messages.sendLocalMessage(CLICK_FUNC_CHANNEL, JSON.stringify({
+					funcName: action.localClickFunc,
+					targetEntity: target,
+					isTargetAvatar: isAvatar,
+				}));
+			};
+		}
+		currentMenuActionFuncs.push([clickFunc, action.keepMenuOpen ?? false]);
+		yPos -= 0.0525 * scale;
+		bgHeight += 0.0525;
+	}
+
+	if (activeActions.length === 0) {
+		let pos = Vec3.sum(origin, Vec3.multiplyQbyV(angle, [0, yPos, 0]));
+		actionEnts.push({
+			grab: {grabbable: false},
+			type: "Text",
+			position: pos,
+			rotation: angle,
+			renderLayer: "front",
+			dimensions: [0.3 * scale, 0.05 * scale, 0.0001 * scale],
+			text: "(No actions)",
+			textColor: [230, 230, 230],
+			backgroundColor: [64, 64, 64],
+			backgroundAlpha: 0.8,
+			unlit: true,
+			lineHeight: 0.025 * scale,
+			verticalAlignment: "center",
+			alignment: "left",
+			triggerable: true,
+			leftMargin: 0.05 * scale,
+			rightMargin: 0.05 * scale,
+		});
+		yPos -= 0.0525 * scale;
+		bgHeight += 0.0525;
+	}
+
+	// background quad
+	/*actionEnts.push({
+		grab: {grabbable: false},
+		type: "Box",
+		position: Vec3.sum(origin, Vec3.multiplyQbyV(angle, [0, 0, -0.01 * scale])),
+		rotation: angle,
+		renderLayer: "front",
+		dimensions: [0.32 * scale, bgHeight, 0.0001 * scale],
+		color: [59, 102, 155],
+		alpha: 0.75,
+		unlit: true,
+	});*/
+
+	for (let a of actionEnts) {
+		if (CONTEXT_MENU_PARENTED) { a["parentID"] = myAvatar; }
+		a["font"] = CONTEXT_MENU_FONT;
+		const e = Entities.addEntity(a, CONTEXT_MENU_PUBLIC ? "avatar" : "local");
+		currentMenuEntities.add(e);
+	}
+
+	currentMenuOpen = true;
+}
+
+let mouseButtonHeld = false;
+function ContextMenu_MousePressEvent(event) {
+	if (event.isLeftButton) { mouseButtonHeld = true; }
+}
+function ContextMenu_MouseReleaseEvent(event) {
+	if (event.isLeftButton) { mouseButtonHeld = false; }
+}
+
+function ContextMenu_OpenRoot() {
+	let actions = [...registeredActionSets["_ROOT"]];
+
+	for (const [setName, parent] of Object.entries(registeredActionSetParents)) {
+		if (parent === "_ROOT") {
+			actions.push(...Object.values(registeredActionSets[setName]));
+		}
+	}
+
+	ContextMenu_OpenActions(actions);
+}
+
+function ContextMenu_KeyEvent(event) {
+	if (event.text === "t" && !event.isAutoRepeat) {
+		if (currentMenuOpen) {
+			ContextMenu_DeleteMenu();
+		} else {
+			if (mouseButtonHeld) { ContextMenu_FindTarget(); }
+			ContextMenu_OpenRoot();
+		}
+	}
+}
+
+let controllerHovering = false;
+function ContextMenu_ActionEvent(action, value) {
+	if (action === TARGET_HOVER_ACTION) { controllerHovering = value > 0.5; }
+
+	if (action === MENU_TOGGLE_ACTION && value > 0.5) {
+		if (currentMenuOpen) {
+			ContextMenu_DeleteMenu();
+		} else {
+			if (controllerHovering) { ContextMenu_FindTarget(); }
+			ContextMenu_OpenRoot();
+		}
+	}
+}
+
+function ContextMenu_Update() {
+	if (!Uuid.isNull(currentMenuTargetLine)) {
+		if (currentMenuTargetIsAvatar) {
+			targetPos = AvatarList.getAvatar(currentMenuTarget).position;
+		} else {
+			targetPos = Entities.getEntityProperties(currentMenuTarget, "position").position;
+		}
+
+		const myPos = Entities.getEntityProperties(currentMenuTargetLine, "position").position;
+
+		Entities.editEntity(currentMenuTargetLine, {
+			linePoints: [
+				[0, 0, 0],
+				[targetPos.x - myPos.x, targetPos.y - myPos.y, targetPos.z - myPos.z],
+			],
+			rotation: Quat.IDENTITY,
+		});
+	}
+}
+
+function ContextMenu_Message(channel, msg, senderID, localOnly) {
+	if (channel !== ACTIONS_CHANNEL) { return; }
+
+	let data; try { data = JSON.parse(msg); } catch (e) {}
+
+	if (data.func === "register") {
+		let tmp = {};
+		for (const [k, v] of Object.entries(data.actionSet)) {
+			tmp[k] = (_entity, _isAvatar) => v;
+		}
+		registeredActionSets[data.name] = tmp;
+		if (data.parent) {
+			registeredActionSetParents[data.name] = data.parent;
+		}
+	} else if (data.func === "unregister") {
+		delete registeredActionSets[data.name];
+		delete registeredActionSetParents[data.name];
+	}
+}
+
+Messages.messageReceived.connect(ContextMenu_Message);
+Controller.keyPressEvent.connect(ContextMenu_KeyEvent);
+Controller.inputEvent.connect(ContextMenu_ActionEvent);
+Controller.mousePressEvent.connect(ContextMenu_MousePressEvent);
+Controller.mouseReleaseEvent.connect(ContextMenu_MouseReleaseEvent);
+Entities.mousePressOnEntity.connect(ContextMenu_EntityClick);
+Script.update.connect(ContextMenu_Update);
+Messages.sendLocalMessage(MAIN_CHANNEL, JSON.stringify({func: "startup"}));
+
+Script.scriptEnding.connect(() => {
+	Messages.messageReceived.disconnect(ContextMenu_Message);
+	Controller.keyPressEvent.disconnect(ContextMenu_KeyEvent);
+	Controller.inputEvent.disconnect(ContextMenu_ActionEvent);
+	Controller.mousePressEvent.disconnect(ContextMenu_MousePressEvent);
+	Controller.mouseReleaseEvent.disconnect(ContextMenu_MouseReleaseEvent);
+	Entities.mousePressOnEntity.disconnect(ContextMenu_EntityClick);
+	Script.update.disconnect(ContextMenu_Update);
+	Picks.removePick(targetingPick);
+	ContextMenu_DeleteMenu();
+	Messages.sendLocalMessage(MAIN_CHANNEL, JSON.stringify({func: "shutdown"}));
+});
