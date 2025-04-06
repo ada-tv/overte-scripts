@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 const CONTEXT_MENU_PUBLIC = false;
-const CONTEXT_MENU_PARENTED = true;
+const CONTEXT_MENU_PARENTED = false;
 // Roboto
 // Inconsolata
 // Courier
@@ -207,20 +207,26 @@ function ContextMenu_OpenActions(actions) {
 	const myAvatar = MyAvatar.sessionUUID;
 
 	let actionEnts = [];
-	let spawnDist;
+	let origin;
 	if (HMD.active) {
-		spawnDist = 1.0;
+		let origin = Vec3.sum(
+			Camera.position,
+			Vec3.multiplyQbyV(
+				Camera.orientation,
+				[0, -0.1 * scale, -1.0 * scale]
+			)
+		);
 	} else {
 		const remap = (low1, high1, low2, high2, value) => low2 + (value - low1) * (high2 - low2) / (high1 - low1);
-		spawnDist = remap(20, 130, 1.2, 0.25, Camera.frustum.fieldOfView);
+		const spawnDist = remap(20, 130, 1.2, 0.25, Camera.frustum.fieldOfView);
+		origin = Vec3.sum(
+			Camera.position,
+			Vec3.multiplyQbyV(
+				Camera.orientation,
+				[0, 0, -spawnDist * scale]
+			)
+		);
 	}
-	let origin = Vec3.sum(
-		Camera.position,
-		Vec3.multiplyQbyV(
-			Camera.orientation,
-			[0, 0, -spawnDist * scale]
-		)
-	);
 	let angle = Quat.lookAtSimple(Camera.position, origin);
 
 	let activeActions = [];
@@ -246,7 +252,7 @@ function ContextMenu_OpenActions(actions) {
 		currentMenuTargetLine = Entities.addEntity({
 			type: "PolyLine",
 			grab: {grabbable: false},
-			parentID: myAvatar,
+			parentID: CONTEXT_MENU_PARENTED ? myAvatar : undefined,
 			position: origin,
 			linePoints: [
 				[0, 0, 0],
