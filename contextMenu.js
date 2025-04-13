@@ -209,7 +209,7 @@ function ContextMenu_OpenActions(actions) {
 	let actionEnts = [];
 	let origin;
 	if (HMD.active) {
-		let origin = Vec3.sum(
+		origin = Vec3.sum(
 			Camera.position,
 			Vec3.multiplyQbyV(
 				Camera.orientation,
