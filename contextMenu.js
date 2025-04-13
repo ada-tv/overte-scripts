@@ -213,7 +213,7 @@ function ContextMenu_OpenActions(actions) {
 			Camera.position,
 			Vec3.multiplyQbyV(
 				Camera.orientation,
-				[0, -0.1 * scale, -1.0 * scale]
+				[0, -0.25 * scale, -1.0 * scale]
 			)
 		);
 	} else {
