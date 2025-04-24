@@ -21,12 +21,24 @@ const HAND_ROT_REST = Quat.fromPitchYawRollDegrees(90, 0, 110);
 
 let handTargetPosition = HAND_POS_REST;
 let handTargetRotation = HAND_ROT_REST;
+let updateTime = 0;
 let handAnimTime = 0.0;
 let isSwinging = false;
 
 function update(delta) {
 	const pi = Math.PI;
 	const t = handAnimTime + 0.5;
+
+	const restPos = {
+		x: -0.3 + Math.sin(updateTime) * -0.005,
+		y: 0.3 + Math.sin(updateTime * 0.5) * 0.02,
+		z: 0.2 + Math.cos(updateTime * 0.5) * 0.01,
+	};
+	const restRot = Quat.fromPitchYawRollDegrees(
+		90 + Math.cos(updateTime * 0.5) * 2,
+		0,
+		110 + Math.sin(updateTime) * 2
+	);
 
 	if (isSwinging) {
 		handTargetPosition = {
@@ -43,14 +55,16 @@ function update(delta) {
 
 		handAnimTime += delta * 4;
 	} else {
-		handTargetPosition = Vec3.mix(handTargetPosition, HAND_POS_REST, delta * 4);
-		handTargetRotation = Quat.slerp(handTargetRotation, HAND_ROT_REST, delta * 4);
+		handTargetPosition = Vec3.mix(handTargetPosition, restPos, delta * 4);
+		handTargetRotation = Quat.slerp(handTargetRotation, restRot, delta * 4);
 	}
 
 	if (handAnimTime >= 2.05) {
 		isSwinging = false;
 		handAnimTime = 0.0;
 	}
+
+	updateTime += delta;
 }
 
 function animationHandler(_props) {
@@ -128,14 +142,16 @@ weaponBackEntity = Entities.addEntity({
 	grab: {grabbable: false},
 }, "avatar");
 
-const animStateHandler = MyAvatar.addAnimationStateHandler(animationHandler, [
-	"rightHandType",
-	"rightHandPosition",
-	"rightHandRotation",
-]);
+let animStateHandler;
 
 // if you're in vr you can just swing your arm
 if (!HMD.active) {
+	animStateHandler = MyAvatar.addAnimationStateHandler(animationHandler, [
+		"rightHandType",
+		"rightHandPosition",
+		"rightHandRotation",
+	]);
+
 	Script.update.connect(update);
 	Controller.mousePressEvent.connect(clickEvent);
 }
