@@ -15,6 +15,8 @@ When an avatar enters an entity with this script, runs the script URL in `userDa
 A configurable `Zone` script that allows spawning and despawning an entity either on proximity or by click activation. Useful for reducing the load of `Web` entities on clients.
 
 ## Fun
+* [ASCII Weapon](asciiWeapon.js)<br>
+An ASCII art sword
 * [Avatar Grab](avatar_grab.js)<br>
 Allows players to grab eachother's avatar. Requires both the grabber and grabee to have the script installed.
 * [Egg](egg.js)<br>

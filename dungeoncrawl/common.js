@@ -8,5 +8,6 @@ Script.update.connect(delta => {
 });
 
 module.exports = {
+	CHANNEL_HUD: "tvnet DungeonCrawl HUD",
 	sessionTime: () => sessionTime,
 }

@@ -48,6 +48,9 @@ Messages.messageReceived.connect((channel, msg, senderID, localOnly) => {
 	if (senderID !== MyAvatar.sessionUUID) { return; }
 
 	const data = JSON.parse(msg);
+
+	if (!(data.funcName in actionFuncs)) { return; }
+
 	actionFuncs[data.funcName]();
 });
 

@@ -194,7 +194,7 @@ function ContextMenu_FindTarget() {
 	}
 }
 
-function ContextMenu_OpenActions(actions) {
+function ContextMenu_OpenActions(baseActions, actionSetName) {
 	currentMenuEntities.forEach((_, e) => Entities.deleteEntity(e));
 	currentMenuTargetLine = Uuid.NULL;
 	currentMenuActionFuncs = [];
@@ -230,6 +230,14 @@ function ContextMenu_OpenActions(actions) {
 	let angle = Quat.lookAtSimple(Camera.position, origin);
 
 	let activeActions = [];
+
+	let actions = [...baseActions];
+
+	for (const [setName, parent] of Object.entries(registeredActionSetParents)) {
+		if (parent === actionSetName) {
+			actions.push(...Object.values(registeredActionSets[setName]));
+		}
+	}
 
 	for (const action of actions) {
 		let actionData = action(currentMenuTarget, currentMenuTargetIsAvatar);
@@ -356,7 +364,7 @@ function ContextMenu_OpenActions(actions) {
 		if (action.submenu) {
 			const actionSet = registeredActionSets[action.submenu];
 			if (actionSet) {
-				clickFunc = (_target, _isAvatar) => ContextMenu_OpenActions(actionSet);
+				clickFunc = (_target, _isAvatar) => ContextMenu_OpenActions(actionSet, action.submenu);
 			} else {
 				print(`Unregistered action set "${action.submenu}"!`);
 			}
@@ -443,13 +451,7 @@ function ContextMenu_MouseReleaseEvent(event) {
 function ContextMenu_OpenRoot() {
 	let actions = [...registeredActionSets["_ROOT"]];
 
-	for (const [setName, parent] of Object.entries(registeredActionSetParents)) {
-		if (parent === "_ROOT") {
-			actions.push(...Object.values(registeredActionSets[setName]));
-		}
-	}
-
-	ContextMenu_OpenActions(actions);
+	ContextMenu_OpenActions(actions, "_ROOT");
 }
 
 function ContextMenu_KeyEvent(event) {

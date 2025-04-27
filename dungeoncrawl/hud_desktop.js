@@ -4,6 +4,21 @@
 const ORIGIN_X = 32;
 const ORIGIN_Y = 96;
 
+let lastTimeString = "00:00:00";
+
+function spawnTimer() {
+	return Overlays.addOverlay("text", {
+		x: ORIGIN_X + 32,
+		y: ORIGIN_Y - 30,
+		width: 80,
+		height: 26,
+		text: lastTimeString,
+		topMargin: 2,
+		leftMargin: 4,
+		color: {red: 255, green: 255, blue: 255},
+	});
+}
+
 let overlayEnts = {
 	goldcount: Overlays.addOverlay("text", {
 		x: ORIGIN_X + 36,
@@ -15,17 +30,7 @@ let overlayEnts = {
 		leftMargin: 8,
 		color: {red: 255, green: 224, blue: 0},
 	}),
-	timer: Overlays.addOverlay("text", {
-		x: ORIGIN_X + 32,
-		y: ORIGIN_Y - 30,
-		width: 80,
-		height: 26,
-		text: "00:00:00",
-		topMargin: 2,
-		leftMargin: 4,
-		color: {red: 255, green: 255, blue: 255},
-	}),
-
+	timer: spawnTimer(),
 	health_bg: Overlays.addOverlay("image", {
 		x: ORIGIN_X,
 		y: ORIGIN_Y,
@@ -88,6 +93,18 @@ module.exports = {
 			":",
 			String(Math.floor(time % 60)).padStart(2, "0")
 		);
-		Overlays.editOverlay(overlayEnts.timer, {text: text});
+		lastTimeString = text;
+
+		if (overlayEnts.timer) {
+			Overlays.editOverlay(overlayEnts.timer, {text: text});
+		}
+	},
+	setTimeHidden: hide => {
+		if (hide) {
+			Overlays.deleteOverlay(overlayEnts.timer);
+			delete overlayEnts.timer;
+		} else if (!overlayEnts.timer) {
+			overlayEnts.timer = spawnTimer();
+		}
 	},
 };
