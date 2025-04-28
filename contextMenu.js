@@ -79,6 +79,13 @@ const ROOT_ACTIONS = [
 		if (isAvatar) { return; }
 		if (!Entities.canRez() || Uuid.isNull(target)) { return; }
 
+		try {
+			const userData = JSON.parse(Entities.getEntityProperties(target, "userData").userData);
+			if (userData?.contextMenu?.noObjectMenu) {
+				return {};
+			}
+		} catch (e) {}
+
 		return {
 			text: "Object",
 			textColor: [0, 255, 0],
@@ -108,6 +115,7 @@ let registeredActionSets = {
 	"_SELF": [...SELF_ACTIONS],
 	"_OBJECT": [...OBJECT_ACTIONS],
 	"_AVATAR": [],
+	"_TARGET": [],
 };
 let registeredActionSetParents = {};
 
@@ -227,7 +235,7 @@ function ContextMenu_OpenActions(actionSetName, page = 0) {
 		if (!actionData || Object.keys(actionData).length === 0) { continue; }
 
 		// the menu item is only valid for a target entity
-		if (action.requiredTargets !== undefined && !(currentMenuTarget in action.requiredTargets)) {
+		if (actionData.requiredTargets !== undefined && !actionData.requiredTargets.includes(currentMenuTarget)) {
 			continue;
 		}
 
@@ -483,6 +491,21 @@ function ContextMenu_MouseReleaseEvent(event) {
 }
 
 function ContextMenu_OpenRoot() {
+	registeredActionSets["_TARGET"] = [];
+
+	try {
+		const data = JSON.parse(Entities.getEntityProperties(currentMenuTarget, "userData").userData);
+		if (data?.contextMenu?.actions) {
+			for (const action of data.contextMenu.actions) {
+				registeredActionSets["_TARGET"].push((_entity, _isAvatar) => action);
+			}
+			ContextMenu_OpenActions("_TARGET");
+			return;
+		}
+	} catch (e) {
+		console.error(e);
+	}
+
 	ContextMenu_OpenActions("_ROOT");
 }
 
