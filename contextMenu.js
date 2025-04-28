@@ -17,6 +17,9 @@ const CLICK_FUNC_CHANNEL = "net.thingvellir.context-menu.click";
 const ACTIONS_CHANNEL = "net.thingvellir.context-menu.actions";
 const MAIN_CHANNEL = "net.thingvellir.context-menu";
 
+// hack around https://github.com/overte-org/overte/issues/1501
+const WHITE_1x1 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQIW2P4DwQACfsD/Z8fLAAAAAAASUVORK5CYII=";
+
 const EMPTY_FUNCTION = () => {};
 
 const SELF_ACTIONS = [
@@ -41,11 +44,12 @@ const OBJECT_ACTIONS = [
 		if (isAvatar) { return; }
 		const locked = Uuid.isNull(ent) || Entities.getEntityProperties(ent, "locked").locked;
 
+		if (locked) { return; }
+
 		return {
 			text: "Delete",
-			textColor: locked ? [64, 64, 64] : [255, 0, 0],
-			backgroundColor: locked ? [128, 128, 128] : [0, 0, 0],
-			clickFunc: locked ? EMPTY_FUNCTION : (ent => Entities.deleteEntity(ent)),
+			textColor: [255, 0, 0],
+			clickFunc: ent => Entities.deleteEntity(ent),
 		};
 	},
 	(ent, isAvatar) => {
@@ -53,16 +57,17 @@ const OBJECT_ACTIONS = [
 		const props = Entities.getEntityProperties(ent, ["locked", "cloneable", "grab"]);
 		const locked = Uuid.isNull(ent) || props.locked || !(props.cloneable && props.grab?.grabbable);
 
+		if (locked) { return; }
+
 		return {
 			text: "Clone",
-			textColor: locked ? [64, 64, 64] : [0, 255, 0],
-			backgroundColor: locked ? [128, 128, 128] : [0, 0, 0],
-			clickFunc: locked ? EMPTY_FUNCTION : (ent => {
+			textColor: [0, 255, 0],
+			clickFunc: ent => {
 				const newEnt = Entities.cloneEntity(ent);
 				Entities.editEntity(newEnt, {
 					position: Vec3.sum(MyAvatar.position, Quat.getFront(MyAvatar.orientation)),
 				});
-			}),
+			},
 		};
 	},
 ];
@@ -82,7 +87,7 @@ const ROOT_ACTIONS = [
 		try {
 			const userData = JSON.parse(Entities.getEntityProperties(target, "userData").userData);
 			if (userData?.contextMenu?.noObjectMenu) {
-				return {};
+				return;
 			}
 		} catch (e) {}
 
@@ -242,8 +247,10 @@ function ContextMenu_OpenActions(actionSetName, page = 0) {
 		activeActions.push(actionData);
 	}
 
+	// FIXME: in some cases there's one too many pages?
 	const hasPages = activeActions.length > ACTIONS_PER_PAGE;
-	page = Math.max(0, Math.min(page, Math.floor(activeActions.length / ACTIONS_PER_PAGE)));
+	const maxPages = Math.floor(activeActions.length / ACTIONS_PER_PAGE);
+	page = Math.max(0, Math.min(page, maxPages));
 	activeActions.sort((a, b) => (a.priority ?? 0) - (b.priority ?? 0));
 	activeActions = activeActions.slice(
 		page * ACTIONS_PER_PAGE,
@@ -274,32 +281,70 @@ function ContextMenu_OpenActions(actionSetName, page = 0) {
 				[0, 0, 1],
 				[0, 0, 1],
 			],
-			strokeWidths: [0.1, 0.0],
+			strokeWidths: [0.02, 0],
 			color: [127, 255, 255],
-			glow: true,
 			faceCamera: true,
+			glow: true,
+			textures: WHITE_1x1,
 		}, CONTEXT_MENU_PUBLIC ? "avatar" : "local");
 		currentMenuEntities.add(currentMenuTargetLine);
 	}
 
 	let titleText;
+	let descriptionText;
 	if (currentMenuTargetIsAvatar) {
 		const data = AvatarList.getAvatar(currentMenuTarget);
-		if (data.displayName === "unnamed" || data.displayName == "NoName") {
-			titleText = `Avatar (${currentMenuTarget})`;
-		} else {
-			titleText = `Avatar (${data.displayName})`;
-		}
+		titleText = data.displayName;
 	} else if (currentMenuTarget) {
-		const data = Entities.getEntityProperties(currentMenuTarget, ["type", "name"]);
+		const data = Entities.getEntityProperties(currentMenuTarget, ["type", "name", "description", "userData"]);
 		const type = data.type ?? "UNKNOWN";
+
 		if (data.name) {
-			titleText = `${type} (${data.name})`;
+			titleText = data.name;
 		} else {
 			titleText = `${type}`;
 		}
+
+		descriptionText = data.description;
+
+		if (data.userData) {
+			try {
+				const userData = JSON.parse(data.userData);
+				titleText = userData?.contextMenu?.title ?? titleText;
+				descriptionText = userData?.contextMenu?.description ?? descriptionText;
+			} catch (e) {
+				console.error(`ContextMenu_OpenActions: ${e}`);
+			}
+		}
 	} else {
 		titleText = "Self";
+	}
+
+	if (descriptionText) {
+		actionEnts.push({
+			grab: {grabbable: false},
+			type: "Text",
+			position: Vec3.sum(origin, Vec3.multiplyQbyV(angle, [0, yPos, 0])),
+			rotation: angle,
+			renderLayer: "front",
+			dimensions: [0.3 * scale, 0.2 * scale, 0.01 * scale],
+			text: descriptionText,
+			textColor: [255, 255, 255],
+			backgroundColor: [0, 0, 0],
+			backgroundAlpha: 0.9,
+			unlit: true,
+			lineHeight: 0.016 * scale,
+			verticalAlignment: "bottom",
+			alignment: "center",
+			triggerable: false,
+			topMargin: 0.005 * scale,
+			bottomMargin: 0.005 * scale,
+			leftMargin: 0.005 * scale,
+			rightMargin: 0.005 * scale,
+		});
+
+		yPos -= 0.122 * scale;
+		bgHeight += 0.122;
 	}
 
 	actionEnts.push({
@@ -327,7 +372,7 @@ function ContextMenu_OpenActions(actionSetName, page = 0) {
 		rotation: angle,
 		renderLayer: "front",
 		dimensions: [0.04 * scale, 0.04 * scale, 0.01 * scale],
-		text: hasPages ? "<" : "",
+		text: hasPages && page > 0 ? "<" : "",
 		textColor: [230, 230, 230],
 		backgroundColor: [0, 0, 0],
 		backgroundAlpha: 0.9,
@@ -338,7 +383,7 @@ function ContextMenu_OpenActions(actionSetName, page = 0) {
 		triggerable: false,
 		leftMargin: 0.003 * scale,
 		topMargin: -0.008 * scale,
-		userData: JSON.stringify({nextPage: page - 1, actionSetName: actionSetName}),
+		userData: hasPages && page > 0 ? JSON.stringify({nextPage: page - 1, actionSetName: actionSetName}) : undefined,
 	});
 
 	actionEnts.push({
@@ -348,7 +393,7 @@ function ContextMenu_OpenActions(actionSetName, page = 0) {
 		rotation: angle,
 		renderLayer: "front",
 		dimensions: [0.04 * scale, 0.04 * scale, 0.01 * scale],
-		text: hasPages ? ">" : "",
+		text: hasPages && page < maxPages ? ">" : "",
 		textColor: [230, 230, 230],
 		backgroundColor: [0, 0, 0],
 		backgroundAlpha: 0.9,
@@ -359,7 +404,7 @@ function ContextMenu_OpenActions(actionSetName, page = 0) {
 		triggerable: false,
 		leftMargin: -0.002 * scale,
 		topMargin: -0.008 * scale,
-		userData: JSON.stringify({nextPage: page + 1, actionSetName: actionSetName}),
+		userData: hasPages && page < maxPages ? JSON.stringify({nextPage: page + 1, actionSetName: actionSetName}) : undefined,
 	});
 
 	yPos -= 0.047 * scale;
@@ -495,7 +540,8 @@ function ContextMenu_OpenRoot() {
 
 	if (currentMenuTarget) {
 		try {
-			const data = JSON.parse(Entities.getEntityProperties(currentMenuTarget, "userData").userData);
+			const userData = Entities.getEntityProperties(currentMenuTarget, "userData").userData;
+			const data = userData ? JSON.parse(userData) : undefined;
 			if (data?.contextMenu?.actions) {
 				for (const action of data.contextMenu.actions) {
 					registeredActionSets["_TARGET"].push((_entity, _isAvatar) => action);
@@ -504,7 +550,7 @@ function ContextMenu_OpenRoot() {
 				return;
 			}
 		} catch (e) {
-			console.error(e);
+			console.error(`ContextMenu_OpenRoot: ${e}`);
 		}
 	}
 

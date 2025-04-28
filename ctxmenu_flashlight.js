@@ -1,0 +1,80 @@
+// SPDX-License-Identifier: CC0-1.0
+const ContextMenu = Script.require(Script.resolvePath("contextMenuApi.js"));
+
+const LEFT_HAND = MyAvatar.getDominantHand() === "right" ? true : false;
+
+let lightEntity;
+let animationOverride;
+
+function DesktopAnimationOverride(_oldProps) {
+	const scale = MyAvatar.getAvatarScale();
+	if (LEFT_HAND) {
+		return {
+			leftHandType: 0,
+			leftHandRotation: Quat.fromPitchYawRollDegrees(93, 0, -70),
+			leftHandPosition: Vec3.multiply([0.2, 0.2, 0.2], scale),
+		};
+	} else {
+		return {
+			rightHandType: 0,
+			rightHandRotation: Quat.fromPitchYawRollDegrees(87, 0, 70),
+			rightHandPosition: Vec3.multiply([-0.2, 0.2, 0.2], scale),
+		};
+	}
+}
+
+function ToggleFlashlight() {
+	if (lightEntity) {
+		MyAvatar.removeAnimationStateHandler(animationOverride);
+		Entities.deleteEntity(lightEntity);
+		lightEntity = undefined;
+	} else {
+		lightEntity = Entities.addEntity({
+			type: "Light",
+			parentID: MyAvatar.sessionUUID,
+			parentJointIndex: MyAvatar.getJointIndex(LEFT_HAND ? "LeftHand" : "RightHand"),
+			localDimensions: [10, 10, 10],
+			localPosition: [0, 0, -0.1 * MyAvatar.getAvatarScale()],
+			localRotation: Quat.fromPitchYawRollDegrees(90, 0, 0),
+			isSpotlight: true,
+			cutoff: 45,
+			exponent: 1,
+			falloffRadius: 1,
+			intensity: 10,
+		}, "avatar");
+
+		if (!HMD.active) {
+			animationOverride = MyAvatar.addAnimationStateHandler(DesktopAnimationOverride, null);
+		}
+	}
+}
+
+const actionSet = [
+	{
+		text: "Flashlight",
+		textColor: [255, 200, 0],
+		localClickFunc: "flashlight.toggle",
+	},
+];
+const actionFuncs = {
+	"flashlight.toggle": () => ToggleFlashlight(),
+};
+
+ContextMenu.registerActionSet("flashlight", actionSet, "_SELF");
+
+Messages.messageReceived.connect((channel, msg, senderID, localOnly) => {
+	if (channel !== ContextMenu.CLICK_FUNC_CHANNEL) { return; }
+	if (senderID !== MyAvatar.sessionUUID) { return; }
+
+	const data = JSON.parse(msg);
+
+	if (!(data.funcName in actionFuncs)) { return; }
+
+	actionFuncs[data.funcName]();
+});
+
+Script.scriptEnding.connect(() => {
+	MyAvatar.removeAnimationStateHandler(animationOverride);
+	Entities.deleteEntity(lightEntity);
+	ContextMenu.unregisterActionSet("flashlight");
+});
