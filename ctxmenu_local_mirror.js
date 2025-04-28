@@ -35,6 +35,7 @@ const actionSet = [
 		text: "Local Mirror",
 		textColor: [192, 255, 255],
 		localClickFunc: "localMirror.toggle",
+		priority: -50,
 	},
 ];
 const actionFuncs = {

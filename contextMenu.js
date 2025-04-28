@@ -2,6 +2,8 @@
 
 const CONTEXT_MENU_PUBLIC = false;
 const CONTEXT_MENU_PARENTED = false;
+const ACTIONS_PER_PAGE = 6;
+
 // Roboto
 // Inconsolata
 // Courier
@@ -55,42 +57,12 @@ const OBJECT_ACTIONS = [
 			text: "Clone",
 			textColor: locked ? [64, 64, 64] : [0, 255, 0],
 			backgroundColor: locked ? [128, 128, 128] : [0, 0, 0],
-			clickFunc: locked ? EMPTY_FUNCTION : (ent => Entities.cloneEntity(ent)),
-		};
-	},
-];
-
-const AVATAR_ACTIONS = [
-	(target, isAvatar) => {
-		if (!isAvatar) { return; }
-		if (target === MyAvatar.sessionUUID) { return; }
-
-		const avatar = AvatarList.getAvatar(target);
-		if (!avatar || Object.keys(avatar).length === 0) { return; }
-
-		if (avatar in Audio.soloList) { return; }
-
-		return {
-			text: "Enable audio priority",
-			textColor: [255, 255, 0],
-			clickFunc: (target, _menuItemEntity) => Audio.soloList.push(target),
-		};
-	},
-	(target, isAvatar) => {
-		if (!isAvatar) { return; }
-		if (target === MyAvatar.sessionUUID) { return; }
-
-		const avatar = AvatarList.getAvatar(target);
-		if (!avatar || Object.keys(avatar).length === 0) { return; }
-
-		if (!(avatar in Audio.soloList)) { return; }
-
-		return {
-			text: "Disable audio priority",
-			textColor: [255, 255, 0],
-			clickFunc: (target, _menuItemEntity) => {
-				Audio.soloList = Audio.soloList.filter(item => item !== push(target));
-			},
+			clickFunc: locked ? EMPTY_FUNCTION : (ent => {
+				const newEnt = Entities.cloneEntity(ent);
+				Entities.editEntity(newEnt, {
+					position: Vec3.sum(MyAvatar.position, Quat.getFront(MyAvatar.orientation)),
+				});
+			}),
 		};
 	},
 ];
@@ -101,6 +73,7 @@ const ROOT_ACTIONS = [
 		textColor: [127, 255, 255],
 		keepMenuOpen: true,
 		submenu: "_SELF",
+		priority: -102,
 	}),
 	(target, isAvatar) => {
 		if (isAvatar) { return; }
@@ -111,6 +84,7 @@ const ROOT_ACTIONS = [
 			textColor: [0, 255, 0],
 			keepMenuOpen: true,
 			submenu: "_OBJECT",
+			priority: -101,
 		};
 	},
 	(target, isAvatar) => {
@@ -124,6 +98,7 @@ const ROOT_ACTIONS = [
 			textColor: [255, 255, 0],
 			keepMenuOpen: true,
 			submenu: "_AVATAR",
+			priority: -100,
 		};
 	},
 ];
@@ -132,7 +107,7 @@ let registeredActionSets = {
 	"_ROOT": [...ROOT_ACTIONS],
 	"_SELF": [...SELF_ACTIONS],
 	"_OBJECT": [...OBJECT_ACTIONS],
-	"_AVATAR": [...AVATAR_ACTIONS],
+	"_AVATAR": [],
 };
 let registeredActionSetParents = {};
 
@@ -169,10 +144,15 @@ function ContextMenu_EntityClick(eid, event) {
 	currentMenuInSubmenu = false;
 
 	try {
-		const func = JSON.parse(Entities.getEntityProperties(eid, "userData").userData).actionFunc;
-		currentMenuActionFuncs[func][0](currentMenuTarget, eid);
-		if (!currentMenuActionFuncs[func][1] && !currentMenuInSubmenu) {
-			ContextMenu_DeleteMenu();
+		const data = JSON.parse(Entities.getEntityProperties(eid, "userData").userData);
+		if (data.nextPage !== undefined && data.actionSetName !== undefined) {
+			ContextMenu_OpenActions(data.actionSetName, data.nextPage);
+		} else {
+			const func = data.actionFunc;
+			currentMenuActionFuncs[func][0](currentMenuTarget, eid);
+			if (!currentMenuActionFuncs[func][1] && !currentMenuInSubmenu) {
+				ContextMenu_DeleteMenu();
+			}
 		}
 	} catch (e) {}
 }
@@ -194,7 +174,7 @@ function ContextMenu_FindTarget() {
 	}
 }
 
-function ContextMenu_OpenActions(baseActions, actionSetName) {
+function ContextMenu_OpenActions(actionSetName, page = 0) {
 	currentMenuEntities.forEach((_, e) => Entities.deleteEntity(e));
 	currentMenuTargetLine = Uuid.NULL;
 	currentMenuActionFuncs = [];
@@ -205,6 +185,8 @@ function ContextMenu_OpenActions(baseActions, actionSetName) {
 
 	const scale = MyAvatar.getAvatarScale();
 	const myAvatar = MyAvatar.sessionUUID;
+
+	const baseActions = registeredActionSets[actionSetName];
 
 	let actionEnts = [];
 	let origin;
@@ -245,6 +227,14 @@ function ContextMenu_OpenActions(baseActions, actionSetName) {
 		if (!actionData || Object.keys(actionData).length === 0) { continue; }
 		activeActions.push(actionData);
 	}
+
+	const hasPages = activeActions.length > ACTIONS_PER_PAGE;
+	page = Math.max(0, Math.min(page, Math.floor(activeActions.length / ACTIONS_PER_PAGE)));
+	activeActions.sort((a, b) => (a.priority ?? 0) - (b.priority ?? 0));
+	activeActions = activeActions.slice(
+		page * ACTIONS_PER_PAGE,
+		(page * ACTIONS_PER_PAGE) + ACTIONS_PER_PAGE
+	);
 
 	let yPos = Math.min(1, activeActions.length) * 0.03 * scale;
 	let bgHeight = (yPos / 2.0) - (0.03 * scale);
@@ -297,13 +287,14 @@ function ContextMenu_OpenActions(baseActions, actionSetName) {
 	} else {
 		titleText = "Self";
 	}
+
 	actionEnts.push({
 		grab: {grabbable: false},
 		type: "Text",
 		position: Vec3.sum(origin, Vec3.multiplyQbyV(angle, [0, yPos, 0])),
 		rotation: angle,
 		renderLayer: "front",
-		dimensions: [0.3 * scale, 0.025 * scale, 0.01 * scale],
+		dimensions: [0.247 * scale, 0.025 * scale, 0.01 * scale],
 		text: titleText,
 		textColor: [230, 230, 230],
 		backgroundColor: [0, 0, 0],
@@ -314,6 +305,49 @@ function ContextMenu_OpenActions(baseActions, actionSetName) {
 		alignment: "center",
 		triggerable: false,
 	});
+
+	actionEnts.push({
+		grab: {grabbable: false},
+		type: "Text",
+		position: Vec3.sum(origin, Vec3.multiplyQbyV(angle, [-0.138, yPos, 0])),
+		rotation: angle,
+		renderLayer: "front",
+		dimensions: [0.025 * scale, 0.025 * scale, 0.01 * scale],
+		text: hasPages ? "<" : "",
+		textColor: [230, 230, 230],
+		backgroundColor: [0, 0, 0],
+		backgroundAlpha: 0.9,
+		unlit: true,
+		lineHeight: 0.03 * scale,
+		verticalAlignment: "top",
+		alignment: "center",
+		triggerable: false,
+		leftMargin: 0.003 * scale,
+		topMargin: -0.004 * scale,
+		userData: JSON.stringify({nextPage: page - 1, actionSetName: actionSetName}),
+	});
+
+	actionEnts.push({
+		grab: {grabbable: false},
+		type: "Text",
+		position: Vec3.sum(origin, Vec3.multiplyQbyV(angle, [0.138, yPos, 0])),
+		rotation: angle,
+		renderLayer: "front",
+		dimensions: [0.025 * scale, 0.025 * scale, 0.01 * scale],
+		text: hasPages ? ">" : "",
+		textColor: [230, 230, 230],
+		backgroundColor: [0, 0, 0],
+		backgroundAlpha: 0.9,
+		unlit: true,
+		lineHeight: 0.03 * scale,
+		verticalAlignment: "top",
+		alignment: "center",
+		triggerable: false,
+		leftMargin: -0.002 * scale,
+		topMargin: -0.004 * scale,
+		userData: JSON.stringify({nextPage: page + 1, actionSetName: actionSetName}),
+	});
+
 	yPos -= 0.04 * scale;
 	bgHeight += 0.04;
 
@@ -362,9 +396,8 @@ function ContextMenu_OpenActions(baseActions, actionSetName) {
 		}
 		let clickFunc = EMPTY_FUNCTION;
 		if (action.submenu) {
-			const actionSet = registeredActionSets[action.submenu];
-			if (actionSet) {
-				clickFunc = (_target, _isAvatar) => ContextMenu_OpenActions(actionSet, action.submenu);
+			if (registeredActionSets[action.submenu]) {
+				clickFunc = (_target, _isAvatar) => ContextMenu_OpenActions(action.submenu);
 			} else {
 				print(`Unregistered action set "${action.submenu}"!`);
 			}
@@ -449,9 +482,7 @@ function ContextMenu_MouseReleaseEvent(event) {
 }
 
 function ContextMenu_OpenRoot() {
-	let actions = [...registeredActionSets["_ROOT"]];
-
-	ContextMenu_OpenActions(actions, "_ROOT");
+	ContextMenu_OpenActions("_ROOT");
 }
 
 function ContextMenu_KeyEvent(event) {
