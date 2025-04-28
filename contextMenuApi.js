@@ -7,7 +7,7 @@ const MAIN_CHANNEL = "net.thingvellir.context-menu";
 let registeredActionSets = {};
 let registeredActionSetParents = {};
 
-function ContextMenu_registerActionSet(name, itemData, parent = "") {
+function ContextMenu_registerActionSet(name, itemData, parent = "_ROOT") {
 	registeredActionSets[name] = itemData;
 	registeredActionSetParents[name] = parent;
 

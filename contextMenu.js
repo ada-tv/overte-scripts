@@ -225,6 +225,12 @@ function ContextMenu_OpenActions(actionSetName, page = 0) {
 		let actionData = action(currentMenuTarget, currentMenuTargetIsAvatar);
 
 		if (!actionData || Object.keys(actionData).length === 0) { continue; }
+
+		// the menu item is only valid for a target entity
+		if (action.requiredTargets !== undefined && !(currentMenuTarget in action.requiredTargets)) {
+			continue;
+		}
+
 		activeActions.push(actionData);
 	}
 
@@ -236,7 +242,7 @@ function ContextMenu_OpenActions(actionSetName, page = 0) {
 		(page * ACTIONS_PER_PAGE) + ACTIONS_PER_PAGE
 	);
 
-	let yPos = Math.min(1, activeActions.length) * 0.03 * scale;
+	let yPos = Math.max(1, activeActions.length) * 0.02 * scale;
 	let bgHeight = (yPos / 2.0) - (0.03 * scale);
 
 	if (!Uuid.isNull(currentMenuTarget)) {
@@ -294,13 +300,13 @@ function ContextMenu_OpenActions(actionSetName, page = 0) {
 		position: Vec3.sum(origin, Vec3.multiplyQbyV(angle, [0, yPos, 0])),
 		rotation: angle,
 		renderLayer: "front",
-		dimensions: [0.247 * scale, 0.025 * scale, 0.01 * scale],
+		dimensions: [0.215 * scale, 0.04 * scale, 0.01 * scale],
 		text: titleText,
 		textColor: [230, 230, 230],
 		backgroundColor: [0, 0, 0],
 		backgroundAlpha: 0.9,
 		unlit: true,
-		lineHeight: 0.015 * scale,
+		lineHeight: 0.018 * scale,
 		verticalAlignment: "center",
 		alignment: "center",
 		triggerable: false,
@@ -309,55 +315,50 @@ function ContextMenu_OpenActions(actionSetName, page = 0) {
 	actionEnts.push({
 		grab: {grabbable: false},
 		type: "Text",
-		position: Vec3.sum(origin, Vec3.multiplyQbyV(angle, [-0.138, yPos, 0])),
+		position: Vec3.sum(origin, Vec3.multiplyQbyV(angle, [-0.13, yPos, 0])),
 		rotation: angle,
 		renderLayer: "front",
-		dimensions: [0.025 * scale, 0.025 * scale, 0.01 * scale],
+		dimensions: [0.04 * scale, 0.04 * scale, 0.01 * scale],
 		text: hasPages ? "<" : "",
 		textColor: [230, 230, 230],
 		backgroundColor: [0, 0, 0],
 		backgroundAlpha: 0.9,
 		unlit: true,
-		lineHeight: 0.03 * scale,
+		lineHeight: 0.05 * scale,
 		verticalAlignment: "top",
 		alignment: "center",
 		triggerable: false,
 		leftMargin: 0.003 * scale,
-		topMargin: -0.004 * scale,
+		topMargin: -0.008 * scale,
 		userData: JSON.stringify({nextPage: page - 1, actionSetName: actionSetName}),
 	});
 
 	actionEnts.push({
 		grab: {grabbable: false},
 		type: "Text",
-		position: Vec3.sum(origin, Vec3.multiplyQbyV(angle, [0.138, yPos, 0])),
+		position: Vec3.sum(origin, Vec3.multiplyQbyV(angle, [0.13, yPos, 0])),
 		rotation: angle,
 		renderLayer: "front",
-		dimensions: [0.025 * scale, 0.025 * scale, 0.01 * scale],
+		dimensions: [0.04 * scale, 0.04 * scale, 0.01 * scale],
 		text: hasPages ? ">" : "",
 		textColor: [230, 230, 230],
 		backgroundColor: [0, 0, 0],
 		backgroundAlpha: 0.9,
 		unlit: true,
-		lineHeight: 0.03 * scale,
+		lineHeight: 0.05 * scale,
 		verticalAlignment: "top",
 		alignment: "center",
 		triggerable: false,
 		leftMargin: -0.002 * scale,
-		topMargin: -0.004 * scale,
+		topMargin: -0.008 * scale,
 		userData: JSON.stringify({nextPage: page + 1, actionSetName: actionSetName}),
 	});
 
-	yPos -= 0.04 * scale;
-	bgHeight += 0.04;
+	yPos -= 0.047 * scale;
+	bgHeight += 0.047;
 
 	for (let i = 0; i < activeActions.length; i++) {
 		let action = activeActions[i];
-
-		// the menu item is only valid for a target entity
-		if (action.requiredTargets !== undefined && !(currentMenuTarget in action.requiredTargets)) {
-			continue;
-		}
 
 		let pos = Vec3.sum(origin, Vec3.multiplyQbyV(angle, [0, yPos, 0]));
 		actionEnts.push({
