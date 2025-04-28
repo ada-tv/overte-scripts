@@ -493,17 +493,19 @@ function ContextMenu_MouseReleaseEvent(event) {
 function ContextMenu_OpenRoot() {
 	registeredActionSets["_TARGET"] = [];
 
-	try {
-		const data = JSON.parse(Entities.getEntityProperties(currentMenuTarget, "userData").userData);
-		if (data?.contextMenu?.actions) {
-			for (const action of data.contextMenu.actions) {
-				registeredActionSets["_TARGET"].push((_entity, _isAvatar) => action);
+	if (currentMenuTarget) {
+		try {
+			const data = JSON.parse(Entities.getEntityProperties(currentMenuTarget, "userData").userData);
+			if (data?.contextMenu?.actions) {
+				for (const action of data.contextMenu.actions) {
+					registeredActionSets["_TARGET"].push((_entity, _isAvatar) => action);
+				}
+				ContextMenu_OpenActions("_TARGET");
+				return;
 			}
-			ContextMenu_OpenActions("_TARGET");
-			return;
+		} catch (e) {
+			console.error(e);
 		}
-	} catch (e) {
-		console.error(e);
 	}
 
 	ContextMenu_OpenActions("_ROOT");

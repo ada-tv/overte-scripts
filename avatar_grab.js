@@ -4,6 +4,10 @@ const DEBUG = false;
 const msgChannel = "AvatarGrab";
 const leave_action = Controller.findAction("TranslateY");
 
+const ContextMenu = Script.require(Script.resolvePath("contextMenuApi.js"));
+
+let grabActiveEnabled = true, grabTargetEnabled = false;
+
 let lastPositions = [];
 let currentGrabHostID;
 let currentGrabJoint;
@@ -40,7 +44,7 @@ function S_LeaveEvent(action, value) {
 	S_Leave();
 }
 
-function S_Update(delta) {
+function S_Update(_delta) {
 	if (lastPositions.length > 4) { lastPositions.splice(0); }
 	lastPositions.push(MyAvatar.position);
 }
@@ -52,7 +56,7 @@ function S_SphereCapsuleTest(org, handRadius) {
 	const center_top = Vec3.mix(cap_top, cap_bottom, 0.25);
 	const center = Vec3.mix(cap_top, cap_bottom, 0.5);
 	const center_bottom = Vec3.mix(cap_top, cap_bottom, 0.75);
-	
+
 	S_Dbg(`S_PointCapsuleTest((${org.x}, ${org.y}, ${org.z}), ${radius}}`);
 
 	if (DEBUG) {
@@ -118,6 +122,8 @@ function S_SphereCapsuleTest(org, handRadius) {
 }
 
 function S_GrabRecv(grabberID, jointName, radius, origin) {
+	if (!grabTargetEnabled) { return; }
+
 	S_Dbg(`S_GrabRecv(${grabberID}, ${jointName}, ${radius}, ${JSON.stringify(origin)})`);
 
 	if (Uuid.isNull(grabberID) || Uuid.isEqual(MyAvatar.sessionUUID, grabberID)) { return; }
@@ -148,6 +154,8 @@ function S_ReleaseRecv(grabberID, jointName) {
 }
 
 function S_GrabSend(joint = "RightHand") {
+	if (!grabActiveEnabled) { return; }
+
 	S_Dbg(`S_GrabSend(${joint})`);
 
 	const jointIndex = MyAvatar.getJointIndex(joint);
@@ -158,7 +166,7 @@ function S_GrabSend(joint = "RightHand") {
 			MyAvatar.getAbsoluteJointTranslationInObjectFrame(jointIndex)
 		)
 	);
-	
+
 	if (DEBUG) {
 		Entities.addEntity({
 			type: "Sphere",
@@ -229,7 +237,7 @@ function S_InputEvent(action, value) {
 		}
 		return;
 	}
-	
+
 	if (action === Controller.Standard.RightGrip) {
 		if (value > 0.9 && !rightGrabAlreadySent) {
 			S_GrabSend("RightHand");
@@ -257,6 +265,24 @@ function S_KeyReleaseEvent(event) {
 }
 
 function S_MsgRecv(channel, rawdata, senderID, localOnly) {
+	if (ContextMenu && channel === ContextMenu.CLICK_FUNC_CHANNEL) {
+		if (senderID !== MyAvatar.sessionUUID) { return; }
+
+		const data = JSON.parse(rawdata);
+
+		switch (data.funcName) {
+			case "avatarGrabSettings.toggleActive":
+				grabActiveEnabled = !grabActiveEnabled;
+				break;
+
+			case "avatarGrabSettings.toggleTarget":
+				grabTargetEnabled = !grabTargetEnabled;
+				break;
+		}
+
+		return;
+	}
+
 	if (channel !== msgChannel) { return; }
 
 	S_Dbg(`S_MsgRecv(${channel}, ${rawdata}, ${senderID}, ${localOnly})`);
@@ -276,6 +302,19 @@ Controller.inputEvent.connect(S_InputEvent);
 Controller.keyPressEvent.connect(S_KeyPressEvent);
 Controller.keyReleaseEvent.connect(S_KeyReleaseEvent);
 
+if (ContextMenu) {
+	ContextMenu.registerActionSet("avatarGrabSettings", [
+		{
+			text: "Toggle grabbing other avatars",
+			localClickFunc: "avatarGrabSettings.toggleActive",
+		},
+		{
+			text: "Toggle being grabbable",
+			localClickFunc: "avatarGrabSettings.toggleTarget",
+		},
+	], "_SELF");
+}
+
 Script.scriptEnding.connect(() => {
 	S_Leave();
 	Controller.inputEvent.disconnect(S_InputEvent);
@@ -284,4 +323,8 @@ Script.scriptEnding.connect(() => {
 	Controller.keyReleaseEvent.disconnect(S_KeyReleaseEvent);
 	Messages.messageReceived.disconnect(S_MsgRecv);
 	Messages.unsubscribe(msgChannel);
+
+	if (ContextMenu) {
+		ContextMenu.unregisterActionSet("avatarGrabSettings");
+	}
 });
