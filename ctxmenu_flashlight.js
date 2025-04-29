@@ -56,9 +56,6 @@ const actionSet = [
 		localClickFunc: "flashlight.toggle",
 	},
 ];
-const actionFuncs = {
-	"flashlight.toggle": () => ToggleFlashlight(),
-};
 
 ContextMenu.registerActionSet("flashlight", actionSet, "_SELF");
 
@@ -68,9 +65,12 @@ Messages.messageReceived.connect((channel, msg, senderID, localOnly) => {
 
 	const data = JSON.parse(msg);
 
-	if (!(data.funcName in actionFuncs)) { return; }
-
-	actionFuncs[data.funcName]();
+	if (data.funcName === "flashlight.toggle") {
+		ToggleFlashlight();
+		actionSet[0].textColor = lightEntity ? [0, 0, 0] : [255, 200, 0];
+		actionSet[0].backgroundColor = lightEntity ? [255, 200, 0] : [0, 0, 0];
+		ContextMenu.editActionSet("flashlight", actionSet);
+	}
 });
 
 Script.scriptEnding.connect(() => {

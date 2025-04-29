@@ -8,11 +8,22 @@ const ContextMenu = Script.require(Script.resolvePath("contextMenuApi.js"));
 
 let grabActiveEnabled = true, grabTargetEnabled = false;
 
+const contextActionSet = {
+	toggleActive: {
+		text: "[X] Can grab avatars",
+		localClickFunc: "avatarGrabSettings.toggleActive",
+	},
+	toggleTarget: {
+		text: "[   ] Can be grabbed",
+		localClickFunc: "avatarGrabSettings.toggleTarget",
+	},
+};
+
 let lastPositions = [];
 let currentGrabHostID;
 let currentGrabJoint;
 
-let S_Dbg = DEBUG ? ((msg) => print(msg)) : ((msg) => {});
+let S_Dbg = DEBUG ? ((msg) => print(msg)) : ((_msg) => {});
 
 function S_Leave() {
 	MyAvatar.endSit(MyAvatar.position, Quat.IDENTITY);
@@ -273,10 +284,14 @@ function S_MsgRecv(channel, rawdata, senderID, localOnly) {
 		switch (data.funcName) {
 			case "avatarGrabSettings.toggleActive":
 				grabActiveEnabled = !grabActiveEnabled;
+				contextActionSet.toggleActive.text = (grabActiveEnabled ? "[X]" : "[   ]") + " Can grab avatars";
+				ContextMenu.editActionSet("avatarGrabSettings", contextActionSet);
 				break;
 
 			case "avatarGrabSettings.toggleTarget":
 				grabTargetEnabled = !grabTargetEnabled;
+				contextActionSet.toggleTarget.text = (grabTargetEnabled ? "[X]" : "[   ]") + " Can be grabbed";
+				ContextMenu.editActionSet("avatarGrabSettings", contextActionSet);
 				break;
 		}
 
@@ -303,16 +318,7 @@ Controller.keyPressEvent.connect(S_KeyPressEvent);
 Controller.keyReleaseEvent.connect(S_KeyReleaseEvent);
 
 if (ContextMenu) {
-	ContextMenu.registerActionSet("avatarGrabSettings", [
-		{
-			text: "Toggle grabbing other avatars",
-			localClickFunc: "avatarGrabSettings.toggleActive",
-		},
-		{
-			text: "Toggle being grabbable",
-			localClickFunc: "avatarGrabSettings.toggleTarget",
-		},
-	], "_SELF");
+	ContextMenu.registerActionSet("avatarGrabSettings", contextActionSet, "_SELF");
 }
 
 Script.scriptEnding.connect(() => {

@@ -44,6 +44,19 @@ function ContextMenu_messageReceived(channel, msg, senderID, localOnly) {
 	}
 }
 
+function ContextMenu_editActionSet(name, itemData) {
+	if (!(name in registeredActionSets)) {
+		console.error(`ContextMenu_editActionSet: Attempted to edit unregistered action set "${name}"`);
+		return;
+	}
+
+	Messages.sendLocalMessage(ACTIONS_CHANNEL, JSON.stringify({
+		func: "edit",
+		name: name,
+		actionSet: itemData,
+	}));
+}
+
 Messages.messageReceived.connect(ContextMenu_messageReceived);
 
 Script.scriptEnding.connect(() => {
@@ -54,7 +67,8 @@ module.exports = {
 	CLICK_FUNC_CHANNEL: CLICK_FUNC_CHANNEL,
 	ACTIONS_CHANNEL: ACTIONS_CHANNEL,
 	MAIN_CHANNEL: MAIN_CHANNEL,
-	
+
 	registerActionSet: ContextMenu_registerActionSet,
 	unregisterActionSet: ContextMenu_unregisterActionSet,
+	editActionSet: ContextMenu_editActionSet,
 };

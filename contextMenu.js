@@ -435,7 +435,7 @@ function ContextMenu_OpenActions(actionSetName, page = 0) {
 			userData: JSON.stringify({actionFunc: i}),
 		});
 		if (action.iconImage) {
-			let pos = Vec3.sum(origin, Vec3.multiplyQbyV(angle, [-0.125 * scale, yPos, 0.0001]));
+			let pos = Vec3.sum(origin, Vec3.multiplyQbyV(angle, [-0.125 * scale, yPos, 0.01 * scale]));
 			actionEnts.push({
 				grab: {grabbable: false},
 				type: "Image",
@@ -453,7 +453,7 @@ function ContextMenu_OpenActions(actionSetName, page = 0) {
 			if (registeredActionSets[action.submenu]) {
 				clickFunc = (_target, _isAvatar) => ContextMenu_OpenActions(action.submenu);
 			} else {
-				print(`Unregistered action set "${action.submenu}"!`);
+				console.error(`Action "${action.text}" referencing unregistered submenu action set "${action.submenu}"`);
 			}
 		} else if (action.clickFunc) {
 			clickFunc = action.clickFunc;
@@ -607,7 +607,7 @@ function ContextMenu_Message(channel, msg, senderID, localOnly) {
 
 	let data; try { data = JSON.parse(msg); } catch (e) {}
 
-	if (data.func === "register") {
+	if (data?.func === "register") {
 		let tmp = {};
 		for (const [k, v] of Object.entries(data.actionSet)) {
 			tmp[k] = (_entity, _isAvatar) => v;
@@ -616,9 +616,18 @@ function ContextMenu_Message(channel, msg, senderID, localOnly) {
 		if (data.parent) {
 			registeredActionSetParents[data.name] = data.parent;
 		}
-	} else if (data.func === "unregister") {
+	} else if (data?.func === "unregister") {
 		delete registeredActionSets[data.name];
 		delete registeredActionSetParents[data.name];
+	} else if (data?.func === "edit") {
+		if (!(data.name in registeredActionSets)) {
+			console.error(`ContextMenu_Message: tried to edit unregistered action set "${data.name}"`);
+			return;
+		}
+
+		for (const [k, v] of Object.entries(data.actionSet)) {
+			registeredActionSets[data.name][k] = (_entity, _isAvatar) => v;
+		}
 	}
 }
 
