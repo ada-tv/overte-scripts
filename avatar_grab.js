@@ -14,7 +14,7 @@ const contextActionSet = {
 		localClickFunc: "avatarGrabSettings.toggleActive",
 	},
 	toggleTarget: {
-		text: "[   ] Can be grabbed",
+		text: "[X] Can be grabbed",
 		localClickFunc: "avatarGrabSettings.toggleTarget",
 	},
 };
