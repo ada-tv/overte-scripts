@@ -727,6 +727,12 @@ for (const pick of targetingPick) {
 	Picks.setIgnoreItems(pick, [MyAvatar.sessionUUID]);
 }
 
+MyAvatar.sessionUUIDChanged.connect(() => {
+	for (const pick of targetingPick) {
+		Picks.setIgnoreItems(pick, [MyAvatar.sessionUUID]);
+	}
+});
+
 Messages.sendLocalMessage(MAIN_CHANNEL, JSON.stringify({func: "startup"}));
 
 Script.scriptEnding.connect(() => {
