@@ -1,5 +1,21 @@
 // SPDX-License-Identifier: CC0-1.0
 
+// start the context menu if it's not installed yet,
+// makes life a little easier for new users
+{
+	let hasContextMenu = false;
+	const runningScripts = ScriptDiscoveryService.getRunning();
+
+	for (const script of runningScripts) {
+		if (script.name === "contextMenu.js") { hasContextMenu = true; break; }
+	}
+
+	if (!hasContextMenu) {
+		ScriptDiscoveryService.loadScript(Script.resolvePath("contextMenu.js"));
+		Window.displayAnnouncement("Press T on desktop or the A/X button in VR to open the context menu. Hold down the left mouse button or the trigger to open the context menu on a targeted object.");
+	}
+}
+
 const CLICK_FUNC_CHANNEL = "net.thingvellir.context-menu.click";
 const ACTIONS_CHANNEL = "net.thingvellir.context-menu.actions";
 const MAIN_CHANNEL = "net.thingvellir.context-menu";
@@ -63,12 +79,32 @@ Script.scriptEnding.connect(() => {
 	Messages.messageReceived.disconnect(ContextMenu_messageReceived);
 });
 
+/**
+ * @module ContextMenu
+ */
 module.exports = {
 	CLICK_FUNC_CHANNEL: CLICK_FUNC_CHANNEL,
 	ACTIONS_CHANNEL: ACTIONS_CHANNEL,
 	MAIN_CHANNEL: MAIN_CHANNEL,
 
+	/**
+	 * Registers a new action set for the context menu.
+	 * @param {string} name - The name of the action set
+	 * @param {(Object|Object[])} actions - The action information
+	 * @param {string} [parent] - The parent of the action set. Built-in sets are "_ROOT", "_SELF", "_OBJECT", and "_AVATAR"
+	 */
 	registerActionSet: ContextMenu_registerActionSet,
+
+	/**
+	 * Unregisters an action set from the context menu.
+	 * @param {string} name - The name of the action set to unregister
+	 */
 	unregisterActionSet: ContextMenu_unregisterActionSet,
+
+	/**
+	 * Edits a previously registered context menu action set. An action set can only be edited by the script that registered it.
+	 * @param {string} name - The name of the action set
+	 * @param {(Object|Object[])} actions - The action information, present object keys or array indices will replace the registered ones
+	 */
 	editActionSet: ContextMenu_editActionSet,
 };

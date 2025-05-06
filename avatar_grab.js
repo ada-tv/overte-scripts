@@ -8,6 +8,12 @@ const ContextMenu = Script.require(Script.resolvePath("contextMenuApi.js"));
 
 let grabActiveEnabled = true, grabTargetEnabled = false;
 
+// enable both if the context menu isn't available to configure it
+if (!ContextMenu) {
+	grabActiveEnabled = true;
+	grabTargetEnabled = true;
+}
+
 const contextActionSet = {
 	toggleActive: {
 		text: "[X] Can grab avatars",

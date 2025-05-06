@@ -1,24 +1,32 @@
 // SPDX-License-Identifier: CC0-1.0
 
-const CONTEXT_MENU_PUBLIC = false;
-const CONTEXT_MENU_PARENTED = false;
-const ACTIONS_PER_PAGE = 6;
+const CONTEXT_MENU_SETTINGS = Settings.getValue("Context Menu");
+
+const ACTIONS_PER_PAGE = CONTEXT_MENU_SETTINGS["actionsPerPage"] ?? 6;
+
+const SOUND_OPEN = SoundCache.getSound(Script.resourcesPath() + "sounds/Expand.wav");
+const SOUND_CLOSE = SoundCache.getSound(Script.resourcesPath() + "sounds/Collapse.wav");
+const SOUND_CLICK = SoundCache.getSound(Script.resourcesPath() + "sounds/Button06.wav");
+const SOUND_HOVER = SoundCache.getSound(Script.resourcesPath() + "sounds/Button04.wav");
+
+const MENU_NAME = "Settings > Context Menu";
+const MENU_ITEM_PUBLIC = "Show publicly";
+const MENU_ITEM_PARENTED = "Follow avatar";
+const MENU_ITEM_NO_SFX = "No sound effects";
 
 // Roboto
 // Inconsolata
 // Courier
 // Timeless
 // https://*
-const CONTEXT_MENU_FONT = "Roboto";
-const MENU_TOGGLE_ACTION = Controller.Standard.RightPrimaryThumb;
-const TARGET_HOVER_ACTION = Controller.Standard.RT;
+const CONTEXT_MENU_FONT = CONTEXT_MENU_SETTINGS["font"] ?? "Roboto";
+const MENU_TOGGLE_ACTION = [Controller.Standard.LeftPrimaryThumb, Controller.Standard.RightPrimaryThumb];
+const MENU_TOGGLE_KEY = "t";
+const TARGET_HOVER_ACTION = [Controller.Standard.LT, Controller.Standard.RT];
 
 const CLICK_FUNC_CHANNEL = "net.thingvellir.context-menu.click";
 const ACTIONS_CHANNEL = "net.thingvellir.context-menu.actions";
 const MAIN_CHANNEL = "net.thingvellir.context-menu";
-
-// hack around https://github.com/overte-org/overte/issues/1501
-const WHITE_1x1 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQIW2P4DwQACfsD/Z8fLAAAAAAASUVORK5CYII=";
 
 const EMPTY_FUNCTION = () => {};
 
@@ -84,12 +92,16 @@ const ROOT_ACTIONS = [
 		if (isAvatar) { return; }
 		if (!Entities.canRez() || Uuid.isNull(target)) { return; }
 
-		try {
-			const userData = JSON.parse(Entities.getEntityProperties(target, "userData").userData);
-			if (userData?.contextMenu?.noObjectMenu) {
-				return;
+		let userData = Entities.getEntityProperties(target, "userData").userData;
+
+		if (userData) {
+			try {
+				userData = JSON.parse(userData);
+				if (userData?.contextMenu?.noObjectMenu) { return; }
+			} catch (e) {
+				console.error(`ROOT_ACTIONS._OBJECT: ${e}`);
 			}
-		} catch (e) {}
+		}
 
 		return {
 			text: "Object",
@@ -124,12 +136,20 @@ let registeredActionSets = {
 };
 let registeredActionSetParents = {};
 
-const targetingPick = Picks.createPick(PickType.Ray, {
-	enabled: true,
-	filter: Picks.PICK_DOMAIN_ENTITIES | Picks.PICK_AVATAR_ENTITIES | Picks.PICK_LOCAL_ENTITIES | Picks.PICK_INCLUDE_NONCOLLIDABLE | Picks.PICK_AVATARS,
-	maxDistance: 20 * MyAvatar.getAvatarScale(),
-	joint: HMD.active ? "_CAMERA_RELATIVE_CONTROLLER_RIGHTHAND" : "Mouse",
-});
+const targetingPick = [
+	Picks.createPick(PickType.Ray, {
+		enabled: true,
+		filter: Picks.PICK_DOMAIN_ENTITIES | Picks.PICK_AVATAR_ENTITIES | Picks.PICK_LOCAL_ENTITIES | Picks.PICK_INCLUDE_NONCOLLIDABLE | Picks.PICK_AVATARS,
+		maxDistance: 20 * MyAvatar.getAvatarScale(),
+		joint: HMD.active ? "_CAMERA_RELATIVE_CONTROLLER_LEFTHAND" : "Mouse",
+	}),
+	Picks.createPick(PickType.Ray, {
+		enabled: true,
+		filter: Picks.PICK_DOMAIN_ENTITIES | Picks.PICK_AVATAR_ENTITIES | Picks.PICK_LOCAL_ENTITIES | Picks.PICK_INCLUDE_NONCOLLIDABLE | Picks.PICK_AVATARS,
+		maxDistance: 20 * MyAvatar.getAvatarScale(),
+		joint: HMD.active ? "_CAMERA_RELATIVE_CONTROLLER_RIGHTHAND" : "Mouse",
+	}),
+];
 
 let currentMenuOpen = false;
 let currentMenuEntities = new Set();
@@ -151,7 +171,7 @@ function ContextMenu_DeleteMenu() {
 	Controller.releaseEntityClickEvents();
 }
 
-function ContextMenu_EntityClick(eid, event) {
+function ContextMenu_EntityClick(eid, _event) {
 	if (!currentMenuEntities.has(eid)) { return; }
 
 	currentMenuInSubmenu = false;
@@ -168,12 +188,33 @@ function ContextMenu_EntityClick(eid, event) {
 			}
 		}
 	} catch (e) {}
+
+	if (!(CONTEXT_MENU_SETTINGS.noSfx ?? false)) { Audio.playSystemSound(SOUND_CLICK); }
 }
 
-function ContextMenu_FindTarget() {
+function ContextMenu_EntityHover(eid, _event) {
+	if (!currentMenuEntities.has(eid)) { return; }
+
+	try {
+		const data = JSON.parse(Entities.getEntityProperties(eid, "userData").userData);
+		if (data.actionFunc !== undefined || (data.nextPage !== undefined && data.actionSetName !== undefined)) {
+			if (!(CONTEXT_MENU_SETTINGS.noSfx ?? false)) { Audio.playSystemSound(SOUND_HOVER); }
+		}
+	} catch (e) {}
+}
+
+function ContextMenu_MenuItemClick(item) {
+	switch (item) {
+		case MENU_ITEM_PUBLIC: CONTEXT_MENU_SETTINGS.public = !CONTEXT_MENU_SETTINGS.public; break;
+		case MENU_ITEM_PARENTED: CONTEXT_MENU_SETTINGS.parented = !CONTEXT_MENU_SETTINGS.parented; break;
+		case MENU_ITEM_NO_SFX: CONTEXT_MENU_SETTINGS.noSfx = !CONTEXT_MENU_SETTINGS.noSfx; break;
+	}
+}
+
+function ContextMenu_FindTarget(hand = 1) {
 	currentMenuTargetIsAvatar = false;
 
-	const ray = Picks.getPrevPickResult(targetingPick);
+	const ray = Picks.getPrevPickResult(targetingPick[hand]);
 	if (!ray.intersects) {
 		currentMenuTarget = Uuid.NULL;
 		return;
@@ -271,7 +312,7 @@ function ContextMenu_OpenActions(actionSetName, page = 0) {
 		currentMenuTargetLine = Entities.addEntity({
 			type: "PolyLine",
 			grab: {grabbable: false},
-			parentID: CONTEXT_MENU_PARENTED ? myAvatar : undefined,
+			parentID: (CONTEXT_MENU_SETTINGS.parented ?? false) ? myAvatar : undefined,
 			position: origin,
 			linePoints: [
 				[0, 0, 0],
@@ -285,8 +326,7 @@ function ContextMenu_OpenActions(actionSetName, page = 0) {
 			color: [127, 255, 255],
 			faceCamera: true,
 			glow: true,
-			textures: WHITE_1x1,
-		}, CONTEXT_MENU_PUBLIC ? "avatar" : "local");
+		}, (CONTEXT_MENU_SETTINGS.public ?? false) ? "avatar" : "local");
 		currentMenuEntities.add(currentMenuTargetLine);
 	}
 
@@ -368,7 +408,7 @@ function ContextMenu_OpenActions(actionSetName, page = 0) {
 	actionEnts.push({
 		grab: {grabbable: false},
 		type: "Text",
-		position: Vec3.sum(origin, Vec3.multiplyQbyV(angle, [-0.13, yPos, 0])),
+		position: Vec3.sum(origin, Vec3.multiplyQbyV(angle, [-0.13 * scale, yPos, 0])),
 		rotation: angle,
 		renderLayer: "front",
 		dimensions: [0.04 * scale, 0.04 * scale, 0.01 * scale],
@@ -389,7 +429,7 @@ function ContextMenu_OpenActions(actionSetName, page = 0) {
 	actionEnts.push({
 		grab: {grabbable: false},
 		type: "Text",
-		position: Vec3.sum(origin, Vec3.multiplyQbyV(angle, [0.13, yPos, 0])),
+		position: Vec3.sum(origin, Vec3.multiplyQbyV(angle, [0.13 * scale, yPos, 0])),
 		rotation: angle,
 		renderLayer: "front",
 		dimensions: [0.04 * scale, 0.04 * scale, 0.01 * scale],
@@ -518,9 +558,9 @@ function ContextMenu_OpenActions(actionSetName, page = 0) {
 	});*/
 
 	for (let a of actionEnts) {
-		if (CONTEXT_MENU_PARENTED) { a["parentID"] = myAvatar; }
+		if (CONTEXT_MENU_SETTINGS.parented ?? false) { a["parentID"] = myAvatar; }
 		a["font"] = CONTEXT_MENU_FONT;
-		const e = Entities.addEntity(a, CONTEXT_MENU_PUBLIC ? "avatar" : "local");
+		const e = Entities.addEntity(a, (CONTEXT_MENU_SETTINGS.public ?? false) ? "avatar" : "local");
 		currentMenuEntities.add(e);
 	}
 
@@ -543,11 +583,39 @@ function ContextMenu_OpenRoot() {
 			const userData = Entities.getEntityProperties(currentMenuTarget, "userData").userData;
 			const data = userData ? JSON.parse(userData) : undefined;
 			if (data?.contextMenu?.actions) {
-				for (const action of data.contextMenu.actions) {
-					registeredActionSets["_TARGET"].push((_entity, _isAvatar) => action);
+				if (Array.isArray(data.contextMenu.actions)) {
+					// objects with custom context menu actions
+					for (const action of data.contextMenu.actions) {
+						registeredActionSets["_TARGET"].push((_entity, _isAvatar) => action);
+					}
+
+					ContextMenu_OpenActions("_TARGET");
+
+					if (!(CONTEXT_MENU_SETTINGS.noSfx)) { Audio.playSystemSound(SOUND_OPEN); }
+				} else {
+					// objects with only one implicit action that's triggered by the context menu button
+					const remoteFunc = data.contextMenu.actions.remoteClickFunc;
+					if (remoteFunc) {
+						Messages.sendMessage(CLICK_FUNC_CHANNEL, JSON.stringify({
+							funcName: remoteFunc,
+							targetEntity: currentMenuTarget,
+							isTargetAvatar: false,
+						}));
+						print(`remoteFunc: ${remoteFunc}`);
+					}
+
+					const localFunc = data.contextMenu.actions.localClickFunc;
+					if (localFunc) {
+						Messages.sendLocalMessage(CLICK_FUNC_CHANNEL, JSON.stringify({
+							funcName: localFunc,
+							targetEntity: currentMenuTarget,
+							isTargetAvatar: false,
+						}));
+						print(`localFunc: ${localFunc}`);
+
+						currentMenuTarget = undefined;
+					}
 				}
-				ContextMenu_OpenActions("_TARGET");
-				return;
 			}
 		} catch (e) {
 			console.error(`ContextMenu_OpenRoot: ${e}`);
@@ -555,12 +623,16 @@ function ContextMenu_OpenRoot() {
 	}
 
 	ContextMenu_OpenActions("_ROOT");
+
+	if (!(CONTEXT_MENU_SETTINGS.noSfx ?? false)) { Audio.playSystemSound(SOUND_OPEN); }
 }
 
 function ContextMenu_KeyEvent(event) {
-	if (event.text === "t" && !event.isAutoRepeat) {
+	if (event.text === MENU_TOGGLE_KEY && !event.isAutoRepeat) {
 		if (currentMenuOpen) {
 			ContextMenu_DeleteMenu();
+
+			if (!(CONTEXT_MENU_SETTINGS.noSfx ?? false)) { Audio.playSystemSound(SOUND_CLOSE); }
 		} else {
 			if (mouseButtonHeld) { ContextMenu_FindTarget(); }
 			ContextMenu_OpenRoot();
@@ -568,15 +640,20 @@ function ContextMenu_KeyEvent(event) {
 	}
 }
 
-let controllerHovering = false;
+let controllerHovering = [false, false];
 function ContextMenu_ActionEvent(action, value) {
-	if (action === TARGET_HOVER_ACTION) { controllerHovering = value > 0.5; }
-
-	if (action === MENU_TOGGLE_ACTION && value > 0.5) {
+	if (TARGET_HOVER_ACTION[0] === action) {
+		controllerHovering[0] = value > 0.5;
+	} else if (TARGET_HOVER_ACTION[1] === action) {
+		controllerHovering[1] = value > 0.5;
+	} else if (MENU_TOGGLE_ACTION.includes(action) && value > 0.5) {
 		if (currentMenuOpen) {
 			ContextMenu_DeleteMenu();
+
+			if (!(CONTEXT_MENU_SETTINGS.noSfx ?? false)) { Audio.playSystemSound(SOUND_CLOSE); }
 		} else {
-			if (controllerHovering) { ContextMenu_FindTarget(); }
+			if (controllerHovering[1]) { ContextMenu_FindTarget(1); }
+			else if (controllerHovering[0]) { ContextMenu_FindTarget(0); }
 			ContextMenu_OpenRoot();
 		}
 	}
@@ -637,7 +714,19 @@ Controller.inputEvent.connect(ContextMenu_ActionEvent);
 Controller.mousePressEvent.connect(ContextMenu_MousePressEvent);
 Controller.mouseReleaseEvent.connect(ContextMenu_MouseReleaseEvent);
 Entities.mousePressOnEntity.connect(ContextMenu_EntityClick);
+Entities.hoverEnterEntity.connect(ContextMenu_EntityHover);
 Script.update.connect(ContextMenu_Update);
+
+Menu.addMenu(MENU_NAME);
+Menu.addMenuItem({menuName: MENU_NAME, menuItemName: MENU_ITEM_PUBLIC, isCheckable: true, isChecked: CONTEXT_MENU_SETTINGS.public ?? false});
+Menu.addMenuItem({menuName: MENU_NAME, menuItemName: MENU_ITEM_PARENTED, isCheckable: true, isChecked: CONTEXT_MENU_SETTINGS.parented ?? false});
+Menu.addMenuItem({menuName: MENU_NAME, menuItemName: MENU_ITEM_NO_SFX, isCheckable: true, isChecked: CONTEXT_MENU_SETTINGS.noSfx ?? false});
+Menu.menuItemEvent.connect(ContextMenu_MenuItemClick);
+
+for (const pick of targetingPick) {
+	Picks.setIgnoreItems(pick, [MyAvatar.sessionUUID]);
+}
+
 Messages.sendLocalMessage(MAIN_CHANNEL, JSON.stringify({func: "startup"}));
 
 Script.scriptEnding.connect(() => {
@@ -647,8 +736,19 @@ Script.scriptEnding.connect(() => {
 	Controller.mousePressEvent.disconnect(ContextMenu_MousePressEvent);
 	Controller.mouseReleaseEvent.disconnect(ContextMenu_MouseReleaseEvent);
 	Entities.mousePressOnEntity.disconnect(ContextMenu_EntityClick);
+	Entities.hoverEnterEntity.disconnect(ContextMenu_EntityHover);
 	Script.update.disconnect(ContextMenu_Update);
-	Picks.removePick(targetingPick);
+	Picks.removePick(targetingPick[0]);
+	Picks.removePick(targetingPick[1]);
 	ContextMenu_DeleteMenu();
+
+	Menu.removeMenuItem(MENU_NAME, MENU_ITEM_PUBLIC);
+	Menu.removeMenuItem(MENU_NAME, MENU_ITEM_PARENTED);
+	Menu.removeMenuItem(MENU_NAME, MENU_ITEM_NO_SFX);
+	Menu.removeMenu(MENU_NAME);
+	Menu.menuItemEvent.disconnect(ContextMenu_MenuItemClick);
+
 	Messages.sendLocalMessage(MAIN_CHANNEL, JSON.stringify({func: "shutdown"}));
+
+	Settings.setValue("Context Menu", CONTEXT_MENU_SETTINGS);
 });
