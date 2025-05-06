@@ -6,13 +6,7 @@ const leave_action = Controller.findAction("TranslateY");
 
 const ContextMenu = Script.require(Script.resolvePath("contextMenuApi.js"));
 
-let grabActiveEnabled = true, grabTargetEnabled = false;
-
-// enable both if the context menu isn't available to configure it
-if (!ContextMenu) {
-	grabActiveEnabled = true;
-	grabTargetEnabled = true;
-}
+let grabActiveEnabled = true, grabTargetEnabled = true;
 
 const contextActionSet = {
 	toggleActive: {
