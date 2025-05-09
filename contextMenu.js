@@ -616,6 +616,8 @@ function ContextMenu_OpenRoot() {
 						currentMenuTarget = undefined;
 					}
 				}
+
+				return;
 			}
 		} catch (e) {
 			console.error(`ContextMenu_OpenRoot: ${e}`);
