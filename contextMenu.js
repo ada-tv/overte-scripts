@@ -32,6 +32,18 @@ const EMPTY_FUNCTION = () => {};
 
 const SELF_ACTIONS = [
 	(_target, _isAvatar) => {
+		if (!HMD.active) { return; }
+
+		return {
+			text: "Recenter",
+			textColor: [255, 192, 64],
+			clickFunc: (target, menuItemEntity) => {
+				HMD.centerUI();
+				MyAvatar.centerBody();
+			},
+		};
+	},
+	(_target, _isAvatar) => {
 		return {
 			text: MyAvatar.getCollisionsEnabled() ? "[   ] Noclip" : "[X] Noclip",
 			textColor: [127, 255, 255],
@@ -43,6 +55,14 @@ const SELF_ACTIONS = [
 			text: MyAvatar.getOtherAvatarsCollisionsEnabled() ? "[X] Avatar collisions" : "[   ] Avatar collisions",
 			textColor: [127, 255, 255],
 			clickFunc: (target, menuItemEntity) => MyAvatar.setOtherAvatarsCollisionsEnabled(!MyAvatar.getOtherAvatarsCollisionsEnabled()),
+		};
+	},
+	(_target, _isAvatar) => {
+		if (!HMD.active) { return; }
+
+		return {
+			text: "Toggle Keyboard",
+			clickFunc: (target, menuItemEntity) => Keyboard.raised = !Keyboard.raised,
 		};
 	},
 ];
