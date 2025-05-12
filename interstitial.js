@@ -1,5 +1,9 @@
+const SOUND_CLICK = SoundCache.getSound(Script.resourcesPath() + "sounds/Button06.wav");
+const SOUND_HOVER = SoundCache.getSound(Script.resourcesPath() + "sounds/Button04.wav");
+
 let fadeOut = false;
 let alpha = 0;
+let fakeLoading = 0;
 
 let hasDescription = false;
 let descriptionAlpha = 0;
@@ -12,6 +16,7 @@ let newDomainDescEntity;
 let newDomainThumbEntity;
 let bgParticlesEntity;
 let loadingBar;
+let cancelButton, skipButton;
 
 function bgMaterialData(alpha = 0) {
 	return {
@@ -26,6 +31,54 @@ function bgMaterialData(alpha = 0) {
 	};
 }
 
+function interstitialHoverStart(entityID, event) {
+	if (entityID === cancelButton) {
+		Audio.playSystemSound(SOUND_HOVER);
+
+		Entities.editEntity(cancelButton, {
+			backgroundAlpha: 1,
+			backgroundColor: [72, 32, 64],
+			textColor: [255, 255, 255],
+		});
+	} else if (entityID === skipButton) {
+		Audio.playSystemSound(SOUND_HOVER);
+
+		Entities.editEntity(skipButton, {
+			backgroundAlpha: 1,
+			backgroundColor: [72, 32, 64],
+			textColor: [255, 255, 255],
+			text: "Skip loading screen >>",
+		});
+	}
+}
+
+function interstitialHoverStop(entityID, event) {
+	if (entityID === cancelButton) {
+		Entities.editEntity(cancelButton, {
+			backgroundAlpha: 0,
+			backgroundColor: [0, 0, 0],
+			textColor: [240, 240, 240],
+		});
+	} else if (entityID === skipButton) {
+		Entities.editEntity(skipButton, {
+			backgroundAlpha: 0,
+			backgroundColor: [0, 0, 0],
+			textColor: [240, 240, 240],
+			text: ">>",
+		});
+	}
+}
+
+function interstitialClick(entityID, event) {
+	if (event.button !== "Primary") { return; }
+
+	if (entityID === cancelButton) {
+		Entities.editEntity(newDomainNameEntity, {text: "Pretend you're going back..."});
+	} else if (entityID === skipButton) {
+		fadeOut = true;
+	}
+}
+
 function interstitialUpdate(delta) {
 	if (fadeOut) {
 		alpha = Math.max(0.0, alpha - delta);
@@ -33,7 +86,7 @@ function interstitialUpdate(delta) {
 
 		Entities.editEntity(bgGridEntity, {visible: false});
 
-		if (alpha == 0) {
+		if (alpha === 0) {
 			deleteInterstitial();
 		}
 	} else {
@@ -49,18 +102,21 @@ function interstitialUpdate(delta) {
 	}
 
 	// domainLoadingProgress always returns zero, and scripts can't run during safe landing :(
-	const loading = Window.domainLoadingProgress();
-	if (loading >= 1.0) { fadeOut = true; }
+	//const loading = Window.domainLoadingProgress();
+	//if (loading >= 1.0) { fadeOut = true; }
+	fakeLoading = Math.min(1, fakeLoading + delta * (1 / 15));
 
 	Entities.editEntity(bgMaterialEntity, {materialData: JSON.stringify(bgMaterialData(Math.max(0.0, (alpha - 0.6) * 2.5)))});
 	Entities.editEntity(newDomainNameEntity, {textAlpha: Math.min(1.0, alpha * 1.3)});
 	Entities.editEntity(newDomainDescEntity, {textAlpha: descriptionAlpha});
 	Entities.editEntity(newDomainThumbEntity, {alpha: descriptionAlpha});
 	Entities.editEntity(loadingBar, {
-		dimensions: [loading * 2, 0.03, 0.03],
-		localPosition: [loading - 1, 0.25, -2],
+		dimensions: [fakeLoading * 2, 0.03, 0.03],
+		localPosition: [fakeLoading - 1, 0.25, -2],
 		alpha: alpha,
 	});
+	Entities.editEntity(skipButton, {textAlpha: alpha});
+	Entities.editEntity(cancelButton, {textAlpha: alpha});
 }
 
 function loadPlaceData(place_name) {
@@ -91,18 +147,19 @@ function loadPlaceData(place_name) {
 function openInterstitial(place_name) {
 	bgEntity = Entities.addEntity({
 		type: "Sphere",
-		position: Vec3.sum(Camera.position, [0, MyAvatar.userHeight, 0]),
+		renderLayer: "front",
+		ignorePickIntersection: true,
+		position: MyAvatar.position,//Vec3.sum(Camera.position, [0, -MyAvatar.userHeight, 0]),
 		rotation: Quat.cancelOutRollAndPitch(Camera.orientation),
-		parentID: MyAvatar.SELF_ID,
 		dimensions: [30, 30, 30],
 		color: [0, 0, 0],
 		alpha: alpha,
 		unlit: true,
-		renderLayer: "front",
 	}, "local");
 
 	bgMaterialEntity = Entities.addEntity({
 		type: "Material",
+		ignorePickIntersection: true,
 		parentID: bgEntity,
 		materialURL: "materialData",
 		priority: 1,
@@ -111,22 +168,25 @@ function openInterstitial(place_name) {
 
 	bgGridEntity = Entities.addEntity({
 		type: "Grid",
-		parentID: bgEntity,
-		position: MyAvatar.getWorldFeetPosition(),
 		renderLayer: "front",
+		parentID: bgEntity,
+		ignorePickIntersection: true,
+		position: MyAvatar.getWorldFeetPosition(),
 		localRotation: Quat.fromPitchYawRollDegrees(90, 0, 0),
 		dimensions: [30, 30, 1],
-		color: "#472e82",
+		//color: "#472e82",
+		color: "#2e214f",
 		followCamera: false,
 		visible: false,
 	}, "local");
 
 	newDomainNameEntity = Entities.addEntity({
 		type: "Text",
-		text: place_name,
 		parentID: bgEntity,
+		ignorePickIntersection: true,
+		text: place_name,
 		localPosition: [0, 0.4, -2],
-		dimensions: [2, 0.2, 0.1],
+		dimensions: [2.5, 0.2, 0.1],
 		lineHeight: 0.2,
 		renderLayer: "front",
 		backgroundAlpha: 0,
@@ -138,8 +198,9 @@ function openInterstitial(place_name) {
 
 	newDomainDescEntity = Entities.addEntity({
 		type: "Text",
-		text: "",
 		parentID: bgEntity,
+		ignorePickIntersection: true,
+		text: "",
 		localPosition: [0, -0.1, -2],
 		dimensions: [2, 0.5, 0.1],
 		lineHeight: 0.1,
@@ -154,6 +215,7 @@ function openInterstitial(place_name) {
 	newDomainThumbEntity = Entities.addEntity({
 		type: "Image",
 		parentID: bgEntity,
+		ignorePickIntersection: true,
 		renderLayer: "front",
 		imageURL: "",
 		dimensions: [2, 1, 0.1],
@@ -165,6 +227,7 @@ function openInterstitial(place_name) {
 	bgParticlesEntity = Entities.addEntity({
 		type: "ParticleEffect",
 		parentID: bgEntity,
+		ignorePickIntersection: true,
 		localPosition: [0, 0, 5],
 		textures: "https://content.overte.org/Bazaar/Assets/Textures/Defaults/Interface/default_particle.png",
 		renderLayer: "front",
@@ -193,6 +256,7 @@ function openInterstitial(place_name) {
 	loadingBar = Entities.addEntity({
 		type: "Box",
 		parentID: bgEntity,
+		ignorePickIntersection: true,
 		renderLayer: "front",
 		dimensions: [2, 0.03, 0.03],
 		localPosition: [0, 0.25, -2],
@@ -201,13 +265,61 @@ function openInterstitial(place_name) {
 		alpha: alpha,
 	}, "local");
 
+	cancelButton = Entities.addEntity({
+		type: "Text",
+		parentID: bgEntity,
+		ignorePickIntersection: false,
+		text: "<  Go back",
+		localPosition: [-1.5, 0.3, -2],
+		localRotation: Quat.fromPitchYawRollDegrees(0, 30, 0),
+		dimensions: [0.5, 0.15, 0.1],
+		lineHeight: 0.1,
+		renderLayer: "front",
+		textAlpha: alpha,
+		unlit: true,
+		alignment: "center",
+		verticalAlignment: "center",
+		backgroundAlpha: 0,
+		backgroundColor: [0, 0, 0],
+		textColor: [240, 240, 240],
+		bottomMargin: 0.015,
+	}, "local");
+
+	skipButton = Entities.addEntity({
+		type: "Text",
+		parentID: bgEntity,
+		ignorePickIntersection: false,
+		text: ">>",
+		localPosition: [0.5, 1.5, -2],
+		dimensions: [1, 0.1, 0.1],
+		lineHeight: 0.08,
+		renderLayer: "front",
+		textAlpha: alpha,
+		unlit: true,
+		alignment: "right",
+		verticalAlignment: "top",
+		backgroundAlpha: 0,
+		backgroundColor: [0, 0, 0],
+		textColor: [240, 240, 240],
+		rightMargin: 0.02,
+		topMargin: 0.01,
+	}, "local");
+
 	Script.update.connect(interstitialUpdate);
+
+	Entities.hoverEnterEntity.connect(interstitialHoverStart);
+	Entities.hoverLeaveEntity.connect(interstitialHoverStop);
+	Entities.mousePressOnEntity.connect(interstitialClick);
 
 	loadPlaceData(place_name);
 }
 
 function deleteInterstitial() {
 	Script.update.disconnect(interstitialUpdate);
+
+	Entities.hoverEnterEntity.disconnect(interstitialHoverStart);
+	Entities.hoverLeaveEntity.disconnect(interstitialHoverStop);
+	Entities.mousePressOnEntity.disconnect(interstitialClick);
 
 	Entities.deleteEntity(bgEntity);
 	Entities.deleteEntity(bgMaterialEntity);
@@ -216,6 +328,8 @@ function deleteInterstitial() {
 	Entities.deleteEntity(bgParticlesEntity);
 	Entities.deleteEntity(newDomainThumbEntity);
 	Entities.deleteEntity(loadingBar);
+	Entities.deleteEntity(cancelButton);
+	Entities.deleteEntity(skipButton);
 
 	Script.stop();
 }
@@ -223,7 +337,7 @@ function deleteInterstitial() {
 Script.scriptEnding.connect(() => deleteInterstitial());
 
 openInterstitial("Overte_Hub");
-Script.setTimeout(() => fadeOut = true, 5000);
+Script.setTimeout(() => fadeOut = true, 15 * 1000);
 
 /*Window.domainChanged.connect(domain => {
 	if (domain.startsWith("file://") || domain.startsWith("http://") || domain.startsWith("https://")) { return; }
