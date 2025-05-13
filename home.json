@@ -142,35 +142,6 @@
 			}
 		},
 		{
-			"id": "{36bd56f6-96b7-48cd-9be6-f86499161ebc}",
-			"type": "Text",
-			"name": "Hub Teleport",
-			"position": {
-				"x": 0,
-				"y": 2,
-				"z": -5.2
-			},
-			"dimensions": {
-				"x": 2.2,
-				"y": 3,
-				"z": 0.001
-			},
-			"grab": {"grabbable": false},
-			"script": "(function() { this.mousePressOnEntity = function(eid, event) { if (event.button !== \"Primary\") { return; } location.handleLookupString(\"hifi://Overte_Hub/\") } })",
-			"unlit": true,
-			"text": "Click to go to\noverte_hub",
-			"lineHeight": 0.4,
-			"textEffect": "shadow",
-			"textEffectColor": {
-				"red": 0,
-				"green": 0,
-				"blue": 0
-			},
-			"textEffectThickness": 0.1,
-			"alignment": "center",
-			"verticalAlignment": "center"
-		},
-		{
 			"id": "{48eba3df-f1ff-4bcf-9a77-8a35300d6ea4}",
 			"parentID": "{db1f3d6c-fd2b-4cac-8904-34335bc2208b}",
 			"type": "Material",

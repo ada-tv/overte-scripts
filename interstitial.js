@@ -31,7 +31,7 @@ function bgMaterialData(alpha = 0) {
 	};
 }
 
-function interstitialHoverStart(entityID, event) {
+function interstitialHoverStart(entityID, _event) {
 	if (entityID === cancelButton) {
 		Audio.playSystemSound(SOUND_HOVER);
 
@@ -52,7 +52,7 @@ function interstitialHoverStart(entityID, event) {
 	}
 }
 
-function interstitialHoverStop(entityID, event) {
+function interstitialHoverStop(entityID, _event) {
 	if (entityID === cancelButton) {
 		Entities.editEntity(cancelButton, {
 			backgroundAlpha: 0,
@@ -104,6 +104,9 @@ function interstitialUpdate(delta) {
 	// domainLoadingProgress always returns zero, and scripts can't run during safe landing :(
 	//const loading = Window.domainLoadingProgress();
 	//if (loading >= 1.0) { fadeOut = true; }
+
+	if (Window.isPhysicsEnabled()) { fadeOut = true; }
+
 	fakeLoading = Math.min(1, fakeLoading + delta * (1 / 15));
 
 	Entities.editEntity(bgMaterialEntity, {materialData: JSON.stringify(bgMaterialData(Math.max(0.0, (alpha - 0.6) * 2.5)))});
@@ -145,6 +148,9 @@ function loadPlaceData(place_name) {
 }
 
 function openInterstitial(place_name) {
+	deleteInterstitial(); // delete any interstitial stuff from a previous run
+	alpha = 1;
+
 	bgEntity = Entities.addEntity({
 		type: "Sphere",
 		renderLayer: "front",
@@ -311,7 +317,7 @@ function openInterstitial(place_name) {
 	Entities.hoverLeaveEntity.connect(interstitialHoverStop);
 	Entities.mousePressOnEntity.connect(interstitialClick);
 
-	loadPlaceData(place_name);
+	//loadPlaceData(place_name);
 }
 
 function deleteInterstitial() {
@@ -331,30 +337,40 @@ function deleteInterstitial() {
 	Entities.deleteEntity(cancelButton);
 	Entities.deleteEntity(skipButton);
 
-	Script.stop();
+	alpha = 0;
+	fakeLoading = 0;
+
+	hasDescription = false;
+	descriptionAlpha = 0;
+
+	//Script.stop();
 }
 
-Script.scriptEnding.connect(() => deleteInterstitial());
+Script.scriptEnding.connect(() => {
+	deleteInterstitial();
+});
 
-openInterstitial("Overte_Hub");
-Script.setTimeout(() => fadeOut = true, 15 * 1000);
+//openInterstitial("Overte_Hub");
+//Script.setTimeout(() => fadeOut = true, 15 * 1000);
 
-/*Window.domainChanged.connect(domain => {
-	if (domain.startsWith("file://") || domain.startsWith("http://") || domain.startsWith("https://")) { return; }
+Window.domainChanged.connect(domain => {
+	if (!domain || domain.startsWith("file://") || domain.startsWith("http://") || domain.startsWith("https://")) { return; }
 	openInterstitial(domain);
 	Script.setTimeout(() => fadeOut = true, 5000);
-});*/
+});
 
 /*let prevPlacename = location.placename;
 
-Script.update.connect(_dt => {
+checkerInterval = Script.setInterval(() => {
 	let placename = location.placename;
 
 	if (placename !== prevPlacename && placename === "") {
-		closeInterstitial();
+		deleteInterstitial();
 	} else if (placename !== prevPlacename && !bgEntity) {
+		print(placename);
 		openInterstitial(placename);
+		Script.setTimeout(() => fadeOut = true, 5000);
 	}
 
 	prevPlacename = placename;
-});*/
+}, 1000 / 10);*/
