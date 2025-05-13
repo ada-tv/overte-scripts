@@ -4,11 +4,11 @@ const SOUND_HOVER = SoundCache.getSound(Script.resourcesPath() + "sounds/Button0
 let tickInterval;
 
 let fadeOut = false;
-let alpha = 0;
+let alpha = 1.0;
 let fakeLoading = 0;
 
 let hasDescription = false;
-let descriptionAlpha = 0;
+let descriptionAlpha = 1.0;
 
 let bgEntity;
 let bgMaterialEntity;
@@ -75,7 +75,7 @@ function interstitialClick(entityID, event) {
 	if (event.button !== "Primary") { return; }
 
 	if (entityID === cancelButton) {
-		Entities.editEntity(newDomainNameEntity, {text: "Pretend you're going back..."});
+		location.goBack();
 	} else if (entityID === skipButton) {
 		fadeOut = true;
 	}
@@ -138,8 +138,8 @@ function loadPlaceData(place_name) {
 
 		try {
 			let place = JSON.parse(req.responseText).data.place;
-			Entities.editEntity(newDomainDescEntity, { text: place.description });
-			Entities.editEntity(newDomainThumbEntity, { imageURL: place.thumbnail });
+			Entities.editEntity(newDomainDescEntity, { text: place?.description ?? "" });
+			Entities.editEntity(newDomainThumbEntity, { imageURL: place?.thumbnail ?? "" });
 
 			hasDescription = true;
 		} catch (e) {
@@ -149,14 +149,28 @@ function loadPlaceData(place_name) {
 	req.send(null);
 }
 
+function updateInterstitial(place_name) {
+	if (!tickInterval || place_name === "") { return; }
+
+	Entities.editEntity(newDomainNameEntity, {text: place_name});
+	Entities.editEntity(newDomainDescEntity, {text: ""});
+	Entities.editEntity(newDomainThumbEntity, {imageURL: ""});
+
+	loadPlaceData(place_name);
+}
+
 function openInterstitial(place_name) {
-	//deleteInterstitial(); // delete any interstitial stuff from a previous run
+	if (tickInterval) {
+		updateInterstitial(place_name);
+		return;
+	}
 
 	bgEntity = Entities.addEntity({
 		type: "Sphere",
 		renderLayer: "front",
+		parentID: MyAvatar.sessionUUID,
 		ignorePickIntersection: true,
-		position: MyAvatar.position,//Vec3.sum(Camera.position, [0, -MyAvatar.userHeight, 0]),
+		localPosition: [0, 0, 0],
 		rotation: Quat.cancelOutRollAndPitch(Camera.orientation),
 		dimensions: [30, 30, 30],
 		color: [0, 0, 0],
@@ -170,7 +184,7 @@ function openInterstitial(place_name) {
 		parentID: bgEntity,
 		materialURL: "materialData",
 		priority: 1,
-		materialData: JSON.stringify(bgMaterialData(0)),
+		materialData: JSON.stringify(bgMaterialData(alpha)),
 	}, "local");
 
 	bgGridEntity = Entities.addEntity({
@@ -178,7 +192,7 @@ function openInterstitial(place_name) {
 		renderLayer: "front",
 		parentID: bgEntity,
 		ignorePickIntersection: true,
-		position: MyAvatar.getWorldFeetPosition(),
+		localPosition: [0, -MyAvatar.userHeight / 2, 0],
 		localRotation: Quat.fromPitchYawRollDegrees(90, 0, 0),
 		dimensions: [30, 30, 1],
 		//color: "#472e82",
@@ -319,7 +333,7 @@ function openInterstitial(place_name) {
 	Entities.hoverLeaveEntity.connect(interstitialHoverStop);
 	Entities.mousePressOnEntity.connect(interstitialClick);
 
-	//loadPlaceData(place_name);
+	loadPlaceData(place_name);
 }
 
 function deleteInterstitial() {
@@ -343,21 +357,33 @@ function deleteInterstitial() {
 	Entities.deleteEntity(cancelButton);
 	Entities.deleteEntity(skipButton);
 
-	alpha = 0;
+	alpha = 1;
 	fakeLoading = 0;
 
 	hasDescription = false;
-	descriptionAlpha = 0;
+	descriptionAlpha = 1;
 }
+
+Window.domainChanged.connect(domain => {
+	if (domain !== "") { return; }
+
+	if (tickInterval) {
+		updateInterstitial(domain);
+	} else {
+		openInterstitial(domain);
+	}
+});
 
 let prevPlacename = location.placename;
 let checkerInterval = Script.setInterval(() => {
 	let placename = location.placename;
 
-	if (placename !== prevPlacename && placename === "") {
-		deleteInterstitial();
-	} else if (placename !== prevPlacename && !bgEntity) {
-		openInterstitial(placename);
+	if (placename !== prevPlacename) {
+		if (tickInterval) {
+			updateInterstitial(placename);
+		} else {
+			openInterstitial(placename);
+		}
 	}
 
 	prevPlacename = placename;
