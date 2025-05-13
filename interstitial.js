@@ -1,6 +1,8 @@
 const SOUND_CLICK = SoundCache.getSound(Script.resourcesPath() + "sounds/Button06.wav");
 const SOUND_HOVER = SoundCache.getSound(Script.resourcesPath() + "sounds/Button04.wav");
 
+let tickInterval;
+
 let fadeOut = false;
 let alpha = 0;
 let fakeLoading = 0;
@@ -148,8 +150,7 @@ function loadPlaceData(place_name) {
 }
 
 function openInterstitial(place_name) {
-	deleteInterstitial(); // delete any interstitial stuff from a previous run
-	alpha = 1;
+	//deleteInterstitial(); // delete any interstitial stuff from a previous run
 
 	bgEntity = Entities.addEntity({
 		type: "Sphere",
@@ -311,7 +312,8 @@ function openInterstitial(place_name) {
 		topMargin: 0.01,
 	}, "local");
 
-	Script.update.connect(interstitialUpdate);
+	//Script.update.connect(interstitialUpdate);
+	tickInterval = Script.setInterval(() => interstitialUpdate(1 / 30), 1000 / 30);
 
 	Entities.hoverEnterEntity.connect(interstitialHoverStart);
 	Entities.hoverLeaveEntity.connect(interstitialHoverStop);
@@ -321,7 +323,11 @@ function openInterstitial(place_name) {
 }
 
 function deleteInterstitial() {
-	Script.update.disconnect(interstitialUpdate);
+	//Script.update.disconnect(interstitialUpdate);
+	if (tickInterval) {
+		Script.clearInterval(tickInterval);
+		delete tickInterval;
+	}
 
 	Entities.hoverEnterEntity.disconnect(interstitialHoverStart);
 	Entities.hoverLeaveEntity.disconnect(interstitialHoverStop);
@@ -342,35 +348,22 @@ function deleteInterstitial() {
 
 	hasDescription = false;
 	descriptionAlpha = 0;
-
-	//Script.stop();
 }
 
-Script.scriptEnding.connect(() => {
-	deleteInterstitial();
-});
-
-//openInterstitial("Overte_Hub");
-//Script.setTimeout(() => fadeOut = true, 15 * 1000);
-
-Window.domainChanged.connect(domain => {
-	if (!domain || domain.startsWith("file://") || domain.startsWith("http://") || domain.startsWith("https://")) { return; }
-	openInterstitial(domain);
-	Script.setTimeout(() => fadeOut = true, 5000);
-});
-
-/*let prevPlacename = location.placename;
-
-checkerInterval = Script.setInterval(() => {
+let prevPlacename = location.placename;
+let checkerInterval = Script.setInterval(() => {
 	let placename = location.placename;
 
 	if (placename !== prevPlacename && placename === "") {
 		deleteInterstitial();
 	} else if (placename !== prevPlacename && !bgEntity) {
-		print(placename);
 		openInterstitial(placename);
-		Script.setTimeout(() => fadeOut = true, 5000);
 	}
 
 	prevPlacename = placename;
-}, 1000 / 10);*/
+}, 1000 / 10);
+
+Script.scriptEnding.connect(() => {
+	deleteInterstitial();
+	Script.clearInterval(checkerInterval);
+});
