@@ -5,7 +5,6 @@ let tickInterval;
 
 let fadeOut = false;
 let alpha = 1.0;
-let fakeLoading = 0;
 
 let hasDescription = false;
 let descriptionAlpha = 1.0;
@@ -17,7 +16,7 @@ let newDomainNameEntity;
 let newDomainDescEntity;
 let newDomainThumbEntity;
 let bgParticlesEntity;
-let loadingBar;
+//let loadingBar;
 let cancelButton, skipButton;
 
 function bgMaterialData(alpha = 0) {
@@ -103,23 +102,17 @@ function interstitialUpdate(delta) {
 		}
 	}
 
-	// domainLoadingProgress always returns zero, and scripts can't run during safe landing :(
-	//const loading = Window.domainLoadingProgress();
-	//if (loading >= 1.0) { fadeOut = true; }
-
 	if (Window.isPhysicsEnabled()) { fadeOut = true; }
-
-	fakeLoading = Math.min(1, fakeLoading + delta * (1 / 15));
 
 	Entities.editEntity(bgMaterialEntity, {materialData: JSON.stringify(bgMaterialData(Math.max(0.0, (alpha - 0.6) * 2.5)))});
 	Entities.editEntity(newDomainNameEntity, {textAlpha: Math.min(1.0, alpha * 1.3)});
 	Entities.editEntity(newDomainDescEntity, {textAlpha: descriptionAlpha});
 	Entities.editEntity(newDomainThumbEntity, {alpha: descriptionAlpha});
-	Entities.editEntity(loadingBar, {
+	/*Entities.editEntity(loadingBar, {
 		dimensions: [fakeLoading * 2, 0.03, 0.03],
 		localPosition: [fakeLoading - 1, 0.25, -2],
 		alpha: alpha,
-	});
+	});*/
 	Entities.editEntity(skipButton, {textAlpha: alpha});
 	Entities.editEntity(cancelButton, {textAlpha: alpha});
 }
@@ -153,7 +146,7 @@ function updateInterstitial(place_name) {
 	if (!tickInterval || place_name === "") { return; }
 
 	Entities.editEntity(newDomainNameEntity, {text: place_name});
-	Entities.editEntity(newDomainDescEntity, {text: ""});
+	Entities.editEntity(newDomainDescEntity, {text: "", textColor: [255, 255, 255]});
 	Entities.editEntity(newDomainThumbEntity, {imageURL: ""});
 
 	loadPlaceData(place_name);
@@ -274,7 +267,7 @@ function openInterstitial(place_name) {
 		radiusFinish: 2,
 	}, "local");
 
-	loadingBar = Entities.addEntity({
+	/*loadingBar = Entities.addEntity({
 		type: "Box",
 		parentID: bgEntity,
 		ignorePickIntersection: true,
@@ -284,7 +277,7 @@ function openInterstitial(place_name) {
 		unlit: true,
 		color: [64, 255, 32],
 		alpha: alpha,
-	}, "local");
+	}, "local");*/
 
 	cancelButton = Entities.addEntity({
 		type: "Text",
@@ -340,7 +333,7 @@ function deleteInterstitial() {
 	//Script.update.disconnect(interstitialUpdate);
 	if (tickInterval) {
 		Script.clearInterval(tickInterval);
-		delete tickInterval;
+		tickInterval = undefined;
 	}
 
 	Entities.hoverEnterEntity.disconnect(interstitialHoverStart);
@@ -353,12 +346,12 @@ function deleteInterstitial() {
 	Entities.deleteEntity(bgGridEntity);
 	Entities.deleteEntity(bgParticlesEntity);
 	Entities.deleteEntity(newDomainThumbEntity);
-	Entities.deleteEntity(loadingBar);
+	//Entities.deleteEntity(loadingBar);
 	Entities.deleteEntity(cancelButton);
 	Entities.deleteEntity(skipButton);
 
+	fadeOut = false;
 	alpha = 1;
-	fakeLoading = 0;
 
 	hasDescription = false;
 	descriptionAlpha = 1;
@@ -372,6 +365,14 @@ Window.domainChanged.connect(domain => {
 	} else {
 		openInterstitial(domain);
 	}
+});
+
+// why isn't this getting triggered??
+Window.domainConnectionRefused.connect((reason, code, info) => {
+	Entities.editEntity(newDomainDescEntity, {
+		text: `Failed to connect!\nCode ${code}: ${reason}\n${info}`,
+		textColor: [255, 64, 64]
+	});
 });
 
 let prevPlacename = location.placename;
