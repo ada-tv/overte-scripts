@@ -9,8 +9,8 @@ const canvas_1 = Entities.addEntity({
 	width: 256,
 	height: 256,
 	unlit: true,
+	transparent: true,
 	collisionless: true,
-	wrapMode: false,
 });
 
 const canvas_2 = Entities.addEntity({
@@ -26,8 +26,8 @@ const canvas_2 = Entities.addEntity({
 	width: 256,
 	height: 256,
 	unlit: true,
+	transparent: true,
 	collisionless: true,
-	wrapMode: false,
 });
 
 const elements_1 = [
@@ -76,7 +76,7 @@ function UI_ElementCommands(elem) {
 
 	switch (elem.type) {
 		case "button": return [
-			CanvasCommand.font("sans-serif", 8, 600, false),
+			CanvasCommand.font("sans-serif", 8, 400, false),
 			CanvasCommand.strokeWidth(2),
 			CanvasCommand.color(DEFAULT_BG),
 			CanvasCommand.fillRect(elem.rect[0], elem.rect[1], elem.rect[2], elem.rect[3]),
@@ -86,7 +86,7 @@ function UI_ElementCommands(elem) {
 			CanvasCommand.fillText(elem.text, elem.rect[0], elem.rect[1], elem.rect[2], elem.rect[3], CanvasCommand.TEXT_ALIGN_CENTER),
 		];
 		case "input-text": return [
-			CanvasCommand.font("sans-serif", 8, 600, false),
+			CanvasCommand.font("sans-serif", 8, 400, false),
 			CanvasCommand.strokeWidth(2),
 			CanvasCommand.color(DEFAULT_BG),
 			CanvasCommand.fillRect(elem.rect[0], elem.rect[1], elem.rect[2], elem.rect[3]),
@@ -103,7 +103,7 @@ function UI_ElementCommands(elem) {
 			CanvasCommand.line(elem.rect[0], 1 + elem.rect[1] + (elem.rect[3] / 2), elem.rect[0] + elem.rect[2], 1 + elem.rect[1] + (elem.rect[3] / 2)),
 		];
 		case "label": return [
-			CanvasCommand.font("sans-serif", 8, 600, false),
+			CanvasCommand.font("sans-serif", 8, 400, false),
 			CanvasCommand.color(DEFAULT_FG),
 			CanvasCommand.fillText(elem.text, elem.rect[0], elem.rect[1], elem.rect[2], elem.rect[3], CanvasCommand.TEXT_ALIGN_LEFT | CanvasCommand.TEXT_ALIGN_VCENTER),
 		];
@@ -114,12 +114,10 @@ function UI_Redraw() {
 	{
 		let cmds = [
 			CanvasCommand.clearRect(0, 0, 256, 256),
-			CanvasCommand.hints(CanvasCommand.HINT_ANTIALIASING),
 			CanvasCommand.color([40, 40, 40, 250]),
 			CanvasCommand.fillRect(0, 0, 256, 256),
 		];
 		for (const elem of elements_1) { cmds.push(UI_ElementCommands(elem)); }
-		cmds.push(CanvasCommand.clearRect(64, 64, 64, 64));
 		Entities.canvasPushCommands(canvas_1, cmds.flat());
 		Entities.canvasCommit(canvas_1);
 	}
@@ -127,12 +125,10 @@ function UI_Redraw() {
 	{
 		let cmds = [
 			CanvasCommand.clearRect(0, 0, 256, 256),
-			CanvasCommand.hints(CanvasCommand.HINT_ANTIALIASING),
 			CanvasCommand.color([40, 40, 40, 250]),
 			CanvasCommand.fillRect(0, 0, 256, 256),
 		];
 		for (const elem of elements_2) { cmds.push(UI_ElementCommands(elem)); }
-		cmds.push(CanvasCommand.clearRect(192, 192, 64, 64));
 		Entities.canvasPushCommands(canvas_2, cmds.flat());
 		Entities.canvasCommit(canvas_2);
 	}

@@ -3,18 +3,19 @@ const CanvasCommand = Script.require("canvasCommand");
 
 const canvas = Entities.addEntity({
 	type: "Canvas",
-	position: MyAvatar.getHeadPosition(),
+	position: Vec3.sum(MyAvatar.getHeadPosition(), Vec3.multiplyQbyV(MyAvatar.orientation, [0, 0, -2])),
+	rotation: MyAvatar.headOrientation,
 	dimensions: [2, 2, 2],
 	width: 256,
 	height: 256,
 	unlit: true,
+	transparent: true,
 	collisionless: true,
-	wrapMode: false,
 });
 
 let ticks = 0;
 const buffer = new Uint8Array(256 * 256 * 4);
-const img = {buffer: buffer.buffer, width: 256, height: 256};
+const img = {data: buffer.buffer, width: 256, height: 256};
 
 const tickInterval = Script.setInterval(() => {
 	for (let x = 0; x < 256; x++) {
@@ -28,7 +29,6 @@ const tickInterval = Script.setInterval(() => {
 
 	Entities.canvasPushPixels(canvas, img);
 	Entities.canvasPushCommands(canvas, [
-		CanvasCommand.hints(CanvasCommand.HINT_ANTIALIASING),
 		CanvasCommand.strokeWidth(16),
 		CanvasCommand.color([255, 0, 255, 128]),
 		CanvasCommand.line(0, 0, 256, 256),
@@ -42,7 +42,7 @@ const tickInterval = Script.setInterval(() => {
 	Entities.canvasCommit(canvas);
 	ticks += 1;
 	ticks &= 0xff;
-}, 10);
+}, 50);
 
 Script.scriptEnding.connect(() => {
 	Script.clearInterval(tickInterval);
