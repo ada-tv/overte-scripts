@@ -160,7 +160,7 @@ function openInterstitial(place_name) {
 
 	bgEntity = Entities.addEntity({
 		type: "Sphere",
-		renderLayer: "front",
+		//renderLayer: "front",
 		parentID: MyAvatar.sessionUUID,
 		ignorePickIntersection: true,
 		localPosition: [0, 0, 0],
@@ -169,6 +169,7 @@ function openInterstitial(place_name) {
 		color: [0, 0, 0],
 		alpha: alpha,
 		unlit: true,
+		grab: {grabbable: false},
 	}, "local");
 
 	bgMaterialEntity = Entities.addEntity({
@@ -178,11 +179,12 @@ function openInterstitial(place_name) {
 		materialURL: "materialData",
 		priority: 1,
 		materialData: JSON.stringify(bgMaterialData(alpha)),
+		grab: {grabbable: false},
 	}, "local");
 
 	bgGridEntity = Entities.addEntity({
 		type: "Grid",
-		renderLayer: "front",
+		//renderLayer: "front",
 		parentID: bgEntity,
 		ignorePickIntersection: true,
 		localPosition: [0, -MyAvatar.userHeight / 2, 0],
@@ -192,6 +194,7 @@ function openInterstitial(place_name) {
 		color: "#2e214f",
 		followCamera: false,
 		visible: false,
+		grab: {grabbable: false},
 	}, "local");
 
 	newDomainNameEntity = Entities.addEntity({
@@ -202,12 +205,13 @@ function openInterstitial(place_name) {
 		localPosition: [0, 0.4, -2],
 		dimensions: [2.5, 0.2, 0.1],
 		lineHeight: 0.2,
-		renderLayer: "front",
+		//renderLayer: "front",
 		backgroundAlpha: 0,
 		textAlpha: alpha,
 		unlit: true,
 		alignment: "center",
 		verticalAlignment: "top",
+		grab: {grabbable: false},
 	}, "local");
 
 	newDomainDescEntity = Entities.addEntity({
@@ -218,24 +222,26 @@ function openInterstitial(place_name) {
 		localPosition: [0, -0.1, -2],
 		dimensions: [2, 0.5, 0.1],
 		lineHeight: 0.1,
-		renderLayer: "front",
+		//renderLayer: "front",
 		backgroundAlpha: 0,
 		textAlpha: alpha,
 		unlit: true,
 		alignment: "center",
 		verticalAlignment: "top",
+		grab: {grabbable: false},
 	}, "local");
 
 	newDomainThumbEntity = Entities.addEntity({
 		type: "Image",
 		parentID: bgEntity,
 		ignorePickIntersection: true,
-		renderLayer: "front",
+		//renderLayer: "front",
 		imageURL: "",
 		dimensions: [2, 1, 0.1],
 		localPosition: [0, 1, -2],
 		emissive: true,
 		alpha: alpha,
+		grab: {grabbable: false},
 	}, "local");
 
 	bgParticlesEntity = Entities.addEntity({
@@ -244,7 +250,7 @@ function openInterstitial(place_name) {
 		ignorePickIntersection: true,
 		localPosition: [0, 0, 5],
 		textures: "https://content.overte.org/Bazaar/Assets/Textures/Defaults/Interface/default_particle.png",
-		renderLayer: "front",
+		//renderLayer: "front",
 		lifespan: 10,
 		maxParticles: 50,
 		emitRate: 15,
@@ -265,18 +271,20 @@ function openInterstitial(place_name) {
 		radiusStart: 0,
 		particleRadius: 2,
 		radiusFinish: 2,
+		grab: {grabbable: false},
 	}, "local");
 
 	/*loadingBar = Entities.addEntity({
 		type: "Box",
 		parentID: bgEntity,
 		ignorePickIntersection: true,
-		renderLayer: "front",
+		//renderLayer: "front",
 		dimensions: [2, 0.03, 0.03],
 		localPosition: [0, 0.25, -2],
 		unlit: true,
 		color: [64, 255, 32],
 		alpha: alpha,
+		grab: {grabbable: false},
 	}, "local");*/
 
 	cancelButton = Entities.addEntity({
@@ -288,7 +296,7 @@ function openInterstitial(place_name) {
 		localRotation: Quat.fromPitchYawRollDegrees(0, 30, 0),
 		dimensions: [0.5, 0.15, 0.1],
 		lineHeight: 0.1,
-		renderLayer: "front",
+		//renderLayer: "front",
 		textAlpha: alpha,
 		unlit: true,
 		alignment: "center",
@@ -297,6 +305,7 @@ function openInterstitial(place_name) {
 		backgroundColor: [0, 0, 0],
 		textColor: [240, 240, 240],
 		bottomMargin: 0.015,
+		grab: {grabbable: false},
 	}, "local");
 
 	skipButton = Entities.addEntity({
@@ -307,7 +316,7 @@ function openInterstitial(place_name) {
 		localPosition: [0.5, 1.5, -2],
 		dimensions: [1, 0.1, 0.1],
 		lineHeight: 0.08,
-		renderLayer: "front",
+		//renderLayer: "front",
 		textAlpha: alpha,
 		unlit: true,
 		alignment: "right",
@@ -317,6 +326,7 @@ function openInterstitial(place_name) {
 		textColor: [240, 240, 240],
 		rightMargin: 0.02,
 		topMargin: 0.01,
+		grab: {grabbable: false},
 	}, "local");
 
 	//Script.update.connect(interstitialUpdate);
