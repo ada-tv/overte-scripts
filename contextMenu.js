@@ -28,6 +28,9 @@ const CLICK_FUNC_CHANNEL = "net.thingvellir.context-menu.click";
 const ACTIONS_CHANNEL = "net.thingvellir.context-menu.actions";
 const MAIN_CHANNEL = "net.thingvellir.context-menu";
 
+const SENSOR_TO_WORLD_MATRIX_INDEX = 65534;
+const CAMERA_MATRIX_INDEX = 65529;
+
 const EMPTY_FUNCTION = () => {};
 
 const SELF_ACTIONS = [
@@ -332,7 +335,8 @@ function ContextMenu_OpenActions(actionSetName, page = 0) {
 		currentMenuTargetLine = Entities.addEntity({
 			type: "PolyLine",
 			grab: {grabbable: false},
-			parentID: (CONTEXT_MENU_SETTINGS.parented ?? false) ? myAvatar : undefined,
+			parentID: (CONTEXT_MENU_SETTINGS.parented ?? true) ? myAvatar : undefined,
+			parentJointIndex: HMD.active ? SENSOR_TO_WORLD_MATRIX_INDEX : CAMERA_MATRIX_INDEX,
 			position: origin,
 			linePoints: [
 				[0, 0, 0],
@@ -578,7 +582,10 @@ function ContextMenu_OpenActions(actionSetName, page = 0) {
 	});*/
 
 	for (let a of actionEnts) {
-		if (CONTEXT_MENU_SETTINGS.parented ?? false) { a["parentID"] = myAvatar; }
+		if (CONTEXT_MENU_SETTINGS.parented ?? true) {
+			a["parentID"] = myAvatar;
+			a["parentJointIndex"] = HMD.active ? SENSOR_TO_WORLD_MATRIX_INDEX : CAMERA_MATRIX_INDEX;
+		}
 		a["font"] = CONTEXT_MENU_FONT;
 		const e = Entities.addEntity(a, (CONTEXT_MENU_SETTINGS.public ?? false) ? "avatar" : "local");
 		currentMenuEntities.add(e);
