@@ -16,7 +16,7 @@ let grabPointer = [
 	// left hand
 	Pointers.createRayPointer({
 		enabled: true,
-		maxDistance: 8,
+		maxDistance: 20,
 		lockEnd: true,
 		scaleWithParent: true,
 		filter: 679, // domain | avatar | local | visible | collidable | precise
@@ -26,7 +26,7 @@ let grabPointer = [
 	// right hand
 	Pointers.createRayPointer({
 		enabled: true,
-		maxDistance: 8,
+		maxDistance: 20,
 		lockEnd: true,
 		scaleWithParent: true,
 		filter: 679, // domain | avatar | local | visible | collidable | precise
@@ -35,8 +35,8 @@ let grabPointer = [
 ];
 
 Script.update.connect(_dt => {
-	if (Controller.getValue(Controller.Standard.LT) < 0.2) { delete grabTarget[0]; }
-	if (Controller.getValue(Controller.Standard.RT) < 0.2) { delete grabTarget[1]; }
+	if (Controller.getValue(Controller.Standard.LeftGrip) < 0.2) { delete grabTarget[0]; }
+	if (Controller.getValue(Controller.Standard.RightGrip) < 0.2) { delete grabTarget[1]; }
 
 	if (!enabled) { return; }
 		

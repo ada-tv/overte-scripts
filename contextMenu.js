@@ -34,7 +34,7 @@ const CAMERA_MATRIX_INDEX = 65529;
 const EMPTY_FUNCTION = () => {};
 
 const SELF_ACTIONS = [
-	(_target, _isAvatar) => {
+	_target => {
 		if (!HMD.active) { return; }
 
 		return {
@@ -46,33 +46,25 @@ const SELF_ACTIONS = [
 			},
 		};
 	},
-	(_target, _isAvatar) => {
+	_target => {
 		return {
 			text: MyAvatar.getCollisionsEnabled() ? "[   ] Noclip" : "[X] Noclip",
 			textColor: [127, 255, 255],
 			clickFunc: (target, menuItemEntity) => MyAvatar.setCollisionsEnabled(!MyAvatar.getCollisionsEnabled()),
 		};
 	},
-	(_target, _isAvatar) => {
+	_target => {
 		return {
 			text: MyAvatar.getOtherAvatarsCollisionsEnabled() ? "[X] Avatar collisions" : "[   ] Avatar collisions",
 			textColor: [127, 255, 255],
 			clickFunc: (target, menuItemEntity) => MyAvatar.setOtherAvatarsCollisionsEnabled(!MyAvatar.getOtherAvatarsCollisionsEnabled()),
 		};
 	},
-	(_target, _isAvatar) => {
-		if (!HMD.active) { return; }
-
-		return {
-			text: "Toggle Keyboard",
-			clickFunc: (target, menuItemEntity) => Keyboard.raised = !Keyboard.raised,
-		};
-	},
 ];
 
 const OBJECT_ACTIONS = [
-	(ent, isAvatar) => {
-		if (isAvatar) { return; }
+	ent => {
+		if (Entities.getNestableType(ent) !== "entity") { return; }
 		const locked = Uuid.isNull(ent) || Entities.getEntityProperties(ent, "locked").locked;
 
 		if (locked) { return; }
@@ -83,8 +75,8 @@ const OBJECT_ACTIONS = [
 			clickFunc: ent => Entities.deleteEntity(ent),
 		};
 	},
-	(ent, isAvatar) => {
-		if (isAvatar) { return; }
+	ent => {
+		if (Entities.getNestableType(ent) !== "entity") { return; }
 		const props = Entities.getEntityProperties(ent, ["locked", "cloneable", "grab"]);
 		const locked = Uuid.isNull(ent) || props.locked || !(props.cloneable && props.grab?.grabbable);
 
@@ -104,15 +96,15 @@ const OBJECT_ACTIONS = [
 ];
 
 const ROOT_ACTIONS = [
-	(_target, _isAvatar) => ({
+	_target => ({
 		text: "My Avatar",
 		textColor: [127, 255, 255],
 		keepMenuOpen: true,
 		submenu: "_SELF",
 		priority: -102,
 	}),
-	(target, isAvatar) => {
-		if (isAvatar) { return; }
+	target => {
+		if (Entities.getNestableType(target) !== "entity") { return; }
 		if (!Entities.canRez() || Uuid.isNull(target)) { return; }
 
 		let userData = Entities.getEntityProperties(target, "userData").userData;
@@ -134,8 +126,8 @@ const ROOT_ACTIONS = [
 			priority: -101,
 		};
 	},
-	(target, isAvatar) => {
-		if (!isAvatar) { return; }
+	target => {
+		if (Entities.getNestableType(target) !== "entity") { return; }
 
 		const avatar = AvatarList.getAvatar(target);
 		if (!avatar || Object.keys(avatar).length === 0) { return; }
@@ -405,6 +397,9 @@ function ContextMenu_OpenActions(actionSetName, page = 0) {
 			bottomMargin: 0.005 * scale,
 			leftMargin: 0.005 * scale,
 			rightMargin: 0.005 * scale,
+			textEffect: "outline fill",
+			textEffectColor: [0, 0, 0],
+			textEffectThickness: 0.3,
 		});
 
 		yPos -= 0.122 * scale;
@@ -427,6 +422,9 @@ function ContextMenu_OpenActions(actionSetName, page = 0) {
 		verticalAlignment: "center",
 		alignment: "center",
 		triggerable: false,
+		textEffect: "outline fill",
+		textEffectColor: [0, 0, 0],
+		textEffectThickness: 0.3,
 	});
 
 	actionEnts.push({
@@ -448,6 +446,9 @@ function ContextMenu_OpenActions(actionSetName, page = 0) {
 		leftMargin: 0.003 * scale,
 		topMargin: -0.008 * scale,
 		userData: hasPages && page > 0 ? JSON.stringify({nextPage: page - 1, actionSetName: actionSetName}) : undefined,
+		textEffect: "outline fill",
+		textEffectColor: [0, 0, 0],
+		textEffectThickness: 0.3,
 	});
 
 	actionEnts.push({
@@ -469,6 +470,9 @@ function ContextMenu_OpenActions(actionSetName, page = 0) {
 		leftMargin: -0.002 * scale,
 		topMargin: -0.008 * scale,
 		userData: hasPages && page < maxPages ? JSON.stringify({nextPage: page + 1, actionSetName: actionSetName}) : undefined,
+		textEffect: "outline fill",
+		textEffectColor: [0, 0, 0],
+		textEffectThickness: 0.3,
 	});
 
 	yPos -= 0.047 * scale;
@@ -497,6 +501,9 @@ function ContextMenu_OpenActions(actionSetName, page = 0) {
 			leftMargin: 0.05 * scale,
 			rightMargin: 0.05 * scale,
 			userData: JSON.stringify({actionFunc: i}),
+			textEffect: "outline fill",
+			textEffectColor: action.backgroundColor ?? [0, 0, 0],
+			textEffectThickness: 0.3,
 		});
 		if (action.iconImage) {
 			let pos = Vec3.sum(origin, Vec3.multiplyQbyV(angle, [-0.125 * scale, yPos, 0.01 * scale]));
@@ -515,26 +522,24 @@ function ContextMenu_OpenActions(actionSetName, page = 0) {
 		let clickFunc = EMPTY_FUNCTION;
 		if (action.submenu) {
 			if (registeredActionSets[action.submenu]) {
-				clickFunc = (_target, _isAvatar) => ContextMenu_OpenActions(action.submenu);
+				clickFunc = _target => ContextMenu_OpenActions(action.submenu);
 			} else {
 				console.error(`Action "${action.text}" referencing unregistered submenu action set "${action.submenu}"`);
 			}
 		} else if (action.clickFunc) {
 			clickFunc = action.clickFunc;
 		} else if (action.remoteClickFunc) {
-			clickFunc = (target, isAvatar) => {
+			clickFunc = target => {
 				Messages.sendMessage(CLICK_FUNC_CHANNEL, JSON.stringify({
 					funcName: action.remoteClickFunc,
 					targetEntity: target,
-					isTargetAvatar: isAvatar,
 				}));
 			};
 		} else if (action.localClickFunc) {
-			clickFunc = (target, isAvatar) => {
+			clickFunc = target => {
 				Messages.sendLocalMessage(CLICK_FUNC_CHANNEL, JSON.stringify({
 					funcName: action.localClickFunc,
 					targetEntity: target,
-					isTargetAvatar: isAvatar,
 				}));
 			};
 		}
@@ -563,23 +568,13 @@ function ContextMenu_OpenActions(actionSetName, page = 0) {
 			triggerable: true,
 			leftMargin: 0.05 * scale,
 			rightMargin: 0.05 * scale,
+			textEffect: "outline fill",
+			textEffectColor: [0, 0, 0],
+			textEffectThickness: 0.3,
 		});
 		yPos -= 0.0525 * scale;
 		bgHeight += 0.0525;
 	}
-
-	// background quad
-	/*actionEnts.push({
-		grab: {grabbable: false},
-		type: "Box",
-		position: Vec3.sum(origin, Vec3.multiplyQbyV(angle, [0, 0, -0.01 * scale])),
-		rotation: angle,
-		renderLayer: "front",
-		dimensions: [0.32 * scale, bgHeight, 0.0001 * scale],
-		color: [59, 102, 155],
-		alpha: 0.75,
-		unlit: true,
-	});*/
 
 	for (let a of actionEnts) {
 		if (CONTEXT_MENU_SETTINGS.parented ?? true) {
@@ -613,7 +608,7 @@ function ContextMenu_OpenRoot() {
 				if (Array.isArray(data.contextMenu.actions)) {
 					// objects with custom context menu actions
 					for (const action of data.contextMenu.actions) {
-						registeredActionSets["_TARGET"].push((_entity, _isAvatar) => action);
+						registeredActionSets["_TARGET"].push(_entity => action);
 					}
 
 					ContextMenu_OpenActions("_TARGET");
@@ -716,7 +711,7 @@ function ContextMenu_Message(channel, msg, senderID, localOnly) {
 	if (data?.func === "register") {
 		let tmp = {};
 		for (const [k, v] of Object.entries(data.actionSet)) {
-			tmp[k] = (_entity, _isAvatar) => v;
+			tmp[k] = _entity => v;
 		}
 		registeredActionSets[data.name] = tmp;
 		if (data.parent) {
@@ -732,7 +727,7 @@ function ContextMenu_Message(channel, msg, senderID, localOnly) {
 		}
 
 		for (const [k, v] of Object.entries(data.actionSet)) {
-			registeredActionSets[data.name][k] = (_entity, _isAvatar) => v;
+			registeredActionSets[data.name][k] = _entity => v;
 		}
 	}
 }
