@@ -11,12 +11,16 @@ function LP_AnimHandlerFunc(_dummy) {
 	const data = {};
 	for (const [name, handle] of Object.entries(jointHandleEntities)) {
 		let { localPosition, localRotation } = Entities.getEntityProperties(handle, ["localPosition", "localRotation"]);
-		localPosition = Vec3.sum(localPosition, Vec3.multiply(Quat.getForward(localRotation), -0.25));
+		if (!name.includes("Hand")) {
+			localPosition = Vec3.sum(localPosition, Vec3.multiply(Quat.getForward(localRotation), -0.25));
+		}
 		const Y_180 = Quat.fromPitchYawRollDegrees(0, 180, 0);
 		localRotation = Quat.multiply(Y_180, localRotation);
 		localRotation = Quat.multiply(localRotation, Y_180);
 		if (name.includes("Foot")) {
 			localRotation = Quat.multiply(localRotation, Quat.fromPitchYawRollDegrees(45, 0, 180));
+		} else if (name.includes("Hand")) {
+			localRotation = Quat.multiply(localRotation, Quat.fromPitchYawRollDegrees(90, name.includes("Left") ? 90 : -90, 0));
 		}
 		localPosition = { x: -localPosition.x, y: localPosition.y, z: -localPosition.z };
 		data[name] = { position: localPosition, rotation: localRotation };
@@ -44,6 +48,22 @@ function LP_AnimHandlerFunc(_dummy) {
 		hipsType: 0,
 		hipsPosition: data["Hips"]["position"],
 		hipsRotation: data["Hips"]["rotation"],
+
+		headType: 0,
+		headPosition: data["Head"]["position"],
+		headRotation: data["Head"]["rotation"],
+
+		leftHandType: 0,
+		leftHandIKPositionVar: "leftHandPosition",
+		leftHandIKRotationVar: "leftHandRotation",
+		leftHandPosition: data["LeftHand"]["position"],
+		leftHandRotation: data["LeftHand"]["rotation"],
+
+		rightHandType: 0,
+		rightHandIKPositionVar: "rightHandPosition",
+		rightHandIKRotationVar: "rightHandRotation",
+		rightHandPosition: data["RightHand"]["position"],
+		rightHandRotation: data["RightHand"]["rotation"],
 	};
 }
 
@@ -51,6 +71,7 @@ function LP_CreateHandles(jointNames) {
 	for (const joint of jointNames) {
 		const jointIndex = MyAvatar.getJointIndex(joint);
 
+		let zOffset = -0.25;
 		let color = [255, 255, 255];
 
 		if (joint.includes("Left")) {
@@ -59,11 +80,15 @@ function LP_CreateHandles(jointNames) {
 			color = [0, 0, 255];
 		}
 
+		if (joint.includes("Hand")) {
+			zOffset = 0;
+		}
+
 		jointHandleEntities[joint] = Entities.addEntity({
 			type: "Box",
 			name: `Body poser handle (${joint})`,
 			parentID: MyAvatar.sessionUUID,
-			localPosition: Vec3.sum([0, 0, -0.25], MyAvatar.getAbsoluteDefaultJointTranslationInObjectFrame(jointIndex)),
+			localPosition: Vec3.sum([0, 0, zOffset], MyAvatar.getAbsoluteDefaultJointTranslationInObjectFrame(jointIndex)),
 			localDimensions: [0.05, 0.05, 0.5],
 			collisionless: true,
 			alpha: 0.5,
@@ -147,7 +172,11 @@ Messages.messageReceived.connect((channel, msg, senderID, _localOnly) => {
 		ContextMenu.editActionSet("bodyPoser", actionSet);
 
 		if (enabled) {
-			LP_CreateHandles(["Hips", "LeftFoot", "RightFoot"]);
+			LP_CreateHandles(
+				HMD.active
+					? ["Hips", "LeftFoot", "RightFoot"]
+					: ["Hips", "LeftFoot", "RightFoot", "Head", "LeftHand", "RightHand"]
+				);
 		} else {
 			LP_DeleteHandles();
 		}
