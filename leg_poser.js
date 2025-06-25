@@ -47,10 +47,15 @@ function LP_AnimHandlerFunc(_dummy) {
 		hipsRotation: data["Hips"]["rotation"],
 	};
 
-	const upperBody = {
+	const upperBody = HMD.active ? {} : {
 		headType: 0,
 		headPosition: data["Head"]["position"],
 		headRotation: data["Head"]["rotation"],
+
+		// on desktop spine2 doesn't seem to have enough flexibility to be particularly useful
+		/*spine2Type: 0,
+		spine2Position: data["Spine2"]["position"],
+		spine2Rotation: data["Spine2"]["rotation"],*/
 
 		leftHandType: 0,
 		leftHandIKPositionVar: "leftHandPosition",
