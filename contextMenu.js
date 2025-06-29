@@ -127,7 +127,7 @@ const ROOT_ACTIONS = [
 		};
 	},
 	target => {
-		if (Entities.getNestableType(target) !== "entity") { return; }
+		if (Entities.getNestableType(target) !== "avatar") { return; }
 
 		const avatar = AvatarList.getAvatar(target);
 		if (!avatar || Object.keys(avatar).length === 0) { return; }
@@ -142,11 +142,48 @@ const ROOT_ACTIONS = [
 	},
 ];
 
+let priorityAvatars = new Set();
+
+const AVATAR_ACTIONS = [
+	target => {
+		if (Entities.getNestableType(target) !== "avatar") { return; }
+
+		const muted = Users.getPersonalMuteStatus(target);
+
+		return {
+			text: muted ? "Unmute" : "Mute",
+			textColor: [255, 64, 0],
+			clickFunc: target => Users.personalMute(target, !muted),
+			priority: -50,
+		};
+	},
+	/*target => {
+		if (Entities.getNestableType(target) !== "avatar") { return; }
+
+		const isPriority = priorityAvatars.has(target);
+
+		const addPriority = target => {
+			priorityAvatars.add(target);
+		};
+
+		const remPriority = target => {
+			priorityAvatars.delete(target);
+		};
+
+		return {
+			text: isPriority ? "[X] Audio Priority" : "[  ] Audio Priority",
+			textColor: [255, 240, 64],
+			clickFunc: isPriority ? remPriority : addPriority,
+			priority: -49,
+		};
+	},*/
+];
+
 let registeredActionSets = {
 	"_ROOT": [...ROOT_ACTIONS],
 	"_SELF": [...SELF_ACTIONS],
 	"_OBJECT": [...OBJECT_ACTIONS],
-	"_AVATAR": [],
+	"_AVATAR": [...AVATAR_ACTIONS],
 	"_TARGET": [],
 };
 let registeredActionSetParents = {};
