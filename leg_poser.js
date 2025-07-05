@@ -1,4 +1,12 @@
 const ContextMenu = Script.require(Script.resolvePath("contextMenuApi.js"));
+const VersionFeatures = Script.require(Script.resolvePath("versionFeatures.js"));
+const QueryOptions = Script.require(Script.resolvePath("queryOptions.js"));
+
+const PUBLIC_HANDLES = Boolean(Number(QueryOptions?.publicHandles ?? 0));
+const USE_GRAB_HACK = !VersionFeatures.grabbableLocalEntities;
+if (USE_GRAB_HACK) {
+	console.warn("Grabbable local entities not supported, using workaround… Other players won't see the handles, but will still be able to grab them!");
+}
 
 let hasHandles = false;
 let enabled = false;
@@ -103,12 +111,30 @@ function LP_CreateHandles(jointNames) {
 			localPosition: MyAvatar.getAbsoluteDefaultJointTranslationInObjectFrame(jointIndex),
 			localDimensions: [0.05, 0.05, 0.8],
 			collisionless: true,
-			alpha: 0.5,
+			alpha: (USE_GRAB_HACK && !PUBLIC_HANDLES) ? 0.0 : 0.5,
 			color: color,
 			unlit: true,
 			visible: handlesVisible,
 			grab: {grabbable: handlesVisible},
-		}, "local");
+		}, (USE_GRAB_HACK || PUBLIC_HANDLES) ? "avatar" : "local");
+
+		// local entities aren't properly grabbable on 2025.05.1,
+		// so have invisible grabbable avatar entities with local visuals
+		if (USE_GRAB_HACK && !PUBLIC_HANDLES) {
+			Entities.addEntity({
+				parentID: jointHandleEntities[joint],
+				type: "Box",
+				name: `Body poser handle visual (${joint})`,
+				localDimensions: [0.05, 0.05, 0.8],
+				collisionless: true,
+				alpha: 0.5,
+				color: color,
+				unlit: true,
+				visible: handlesVisible,
+				grab: {grabbable: false},
+				ignorePickIntersection: true,
+			}, "local");
+		}
 	}
 
 	for (const role of MyAvatar.getAnimationRoles()) {
@@ -156,14 +182,18 @@ Script.scriptEnding.connect(() => {
 
 const actionSet = [
 	{
-		text: "Hide poser handles",
+		text: ">  [X] Poser handles",
 		localClickFunc: "bodyPoser.toggleHandles",
-		priority: -2,
+		backgroundColor: [0, 0, 0],
+		textColor: [128, 128, 128],
+		priority: -4.9,
 	},
 	{
-		text: "Enable poser",
+		text: "Poser",
 		localClickFunc: "bodyPoser.toggle",
-		priority: -1,
+		backgroundColor: [0, 0, 0],
+		textColor: [0, 255, 64],
+		priority: -5,
 	},
 ];
 
@@ -177,8 +207,6 @@ Messages.messageReceived.connect((channel, msg, senderID, _localOnly) => {
 
 	if (data.funcName === "bodyPoser.toggleHandles") {
 		handlesVisible = !handlesVisible;
-		actionSet[0].text = handlesVisible ? "Hide poser handles" : "Show poser handles";
-		ContextMenu.editActionSet("bodyPoser", actionSet);
 
 		if (handlesVisible) {
 			LP_ShowHandles();
@@ -187,9 +215,6 @@ Messages.messageReceived.connect((channel, msg, senderID, _localOnly) => {
 		}
 	} else if (data.funcName === "bodyPoser.toggle") {
 		enabled = !enabled;
-
-		actionSet[1].text = enabled ? "Disable poser" : "Enable poser";
-		ContextMenu.editActionSet("bodyPoser", actionSet);
 
 		if (enabled) {
 			LP_CreateHandles(
@@ -200,5 +225,19 @@ Messages.messageReceived.connect((channel, msg, senderID, _localOnly) => {
 		} else {
 			LP_DeleteHandles();
 		}
+	}
+
+	if (data.funcName.startsWith("bodyPoser.toggle")) {
+		const fgColor = enabled ? [255, 255, 255] : [0, 255, 96];
+		const bgColor = enabled ? [0, 64, 24] : [0, 0, 0];
+
+		actionSet[0].text = handlesVisible ? ">  [X] Show handles" : ">  [  ] Show handles";
+		actionSet[0].backgroundColor = bgColor;
+		actionSet[0].textColor = enabled ? [255, 255, 255] : [128, 128, 128];
+
+		actionSet[1].backgroundColor = bgColor;
+		actionSet[1].textColor = fgColor;
+
+		ContextMenu.editActionSet("bodyPoser", actionSet);
 	}
 });
