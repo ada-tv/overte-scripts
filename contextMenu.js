@@ -9,11 +9,6 @@ const SOUND_CLOSE = SoundCache.getSound(Script.resourcesPath() + "sounds/Collaps
 const SOUND_CLICK = SoundCache.getSound(Script.resourcesPath() + "sounds/Button06.wav");
 const SOUND_HOVER = SoundCache.getSound(Script.resourcesPath() + "sounds/Button04.wav");
 
-const MENU_NAME = "Settings > Context Menu";
-const MENU_ITEM_PUBLIC = "Show publicly";
-const MENU_ITEM_PARENTED = "Follow avatar";
-const MENU_ITEM_NO_SFX = "No sound effects";
-
 // Roboto
 // Inconsolata
 // Courier
@@ -213,14 +208,6 @@ function ContextMenu_EntityHover(eid, _event) {
 			if (!(CONTEXT_MENU_SETTINGS.noSfx ?? false)) { Audio.playSystemSound(SOUND_HOVER); }
 		}
 	} catch (e) {}
-}
-
-function ContextMenu_MenuItemClick(item) {
-	switch (item) {
-		case MENU_ITEM_PUBLIC: CONTEXT_MENU_SETTINGS.public = !CONTEXT_MENU_SETTINGS.public; break;
-		case MENU_ITEM_PARENTED: CONTEXT_MENU_SETTINGS.parented = !CONTEXT_MENU_SETTINGS.parented; break;
-		case MENU_ITEM_NO_SFX: CONTEXT_MENU_SETTINGS.noSfx = !CONTEXT_MENU_SETTINGS.noSfx; break;
-	}
 }
 
 function ContextMenu_FindTarget(hand = 1) {
@@ -611,24 +598,22 @@ function ContextMenu_OpenRoot() {
 					if (!(CONTEXT_MENU_SETTINGS.noSfx)) { Audio.playSystemSound(SOUND_OPEN); }
 				} else {
 					// objects with only one implicit action that's triggered by the context menu button
-					const remoteFunc = data.contextMenu.actions.remoteClickFunc;
+					const remoteFunc = data?.contextMenu?.actions?.remoteClickFunc;
 					if (remoteFunc) {
 						Messages.sendMessage(CLICK_FUNC_CHANNEL, JSON.stringify({
 							funcName: remoteFunc,
 							targetEntity: currentMenuTarget,
 							isTargetAvatar: false,
 						}));
-						print(`remoteFunc: ${remoteFunc}`);
 					}
 
-					const localFunc = data.contextMenu.actions.localClickFunc;
+					const localFunc = data?.contextMenu?.actions?.localClickFunc;
 					if (localFunc) {
 						Messages.sendLocalMessage(CLICK_FUNC_CHANNEL, JSON.stringify({
 							funcName: localFunc,
 							targetEntity: currentMenuTarget,
 							isTargetAvatar: false,
 						}));
-						print(`localFunc: ${localFunc}`);
 
 						currentMenuTarget = undefined;
 					}
@@ -736,12 +721,6 @@ Entities.mousePressOnEntity.connect(ContextMenu_EntityClick);
 Entities.hoverEnterEntity.connect(ContextMenu_EntityHover);
 Script.update.connect(ContextMenu_Update);
 
-Menu.addMenu(MENU_NAME);
-Menu.addMenuItem({menuName: MENU_NAME, menuItemName: MENU_ITEM_PUBLIC, isCheckable: true, isChecked: CONTEXT_MENU_SETTINGS.public ?? false});
-Menu.addMenuItem({menuName: MENU_NAME, menuItemName: MENU_ITEM_PARENTED, isCheckable: true, isChecked: CONTEXT_MENU_SETTINGS.parented ?? false});
-Menu.addMenuItem({menuName: MENU_NAME, menuItemName: MENU_ITEM_NO_SFX, isCheckable: true, isChecked: CONTEXT_MENU_SETTINGS.noSfx ?? false});
-Menu.menuItemEvent.connect(ContextMenu_MenuItemClick);
-
 for (const pick of targetingPick) {
 	Picks.setIgnoreItems(pick, [MyAvatar.sessionUUID]);
 }
@@ -766,12 +745,6 @@ Script.scriptEnding.connect(() => {
 	Picks.removePick(targetingPick[0]);
 	Picks.removePick(targetingPick[1]);
 	ContextMenu_DeleteMenu();
-
-	Menu.removeMenuItem(MENU_NAME, MENU_ITEM_PUBLIC);
-	Menu.removeMenuItem(MENU_NAME, MENU_ITEM_PARENTED);
-	Menu.removeMenuItem(MENU_NAME, MENU_ITEM_NO_SFX);
-	Menu.removeMenu(MENU_NAME);
-	Menu.menuItemEvent.disconnect(ContextMenu_MenuItemClick);
 
 	Messages.sendLocalMessage(MAIN_CHANNEL, JSON.stringify({func: "shutdown"}));
 
