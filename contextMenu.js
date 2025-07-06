@@ -21,7 +21,7 @@ const MENU_ITEM_NO_SFX = "No sound effects";
 // https://*
 const CONTEXT_MENU_FONT = CONTEXT_MENU_SETTINGS["font"] ?? "Roboto";
 const MENU_TOGGLE_ACTION = [Controller.Standard.LeftPrimaryThumb, Controller.Standard.RightPrimaryThumb];
-const MENU_TOGGLE_KEY = "t";
+const MENU_TOGGLE_KEY = "b";
 const TARGET_HOVER_ACTION = [Controller.Standard.LT, Controller.Standard.RT];
 
 const CLICK_FUNC_CHANNEL = "net.thingvellir.context-menu.click";
@@ -40,7 +40,7 @@ const SELF_ACTIONS = [
 		return {
 			text: "Recenter",
 			textColor: [255, 192, 64],
-			clickFunc: (target, menuItemEntity) => {
+			clickFunc: _target => {
 				HMD.centerUI();
 				MyAvatar.centerBody();
 			},
@@ -48,16 +48,16 @@ const SELF_ACTIONS = [
 	},
 	_target => {
 		return {
-			text: MyAvatar.getCollisionsEnabled() ? "[   ] Noclip" : "[X] Noclip",
+			text: MyAvatar.getCollisionsEnabled() ? "[  ] Noclip" : "[X] Noclip",
 			textColor: [127, 255, 255],
-			clickFunc: (target, menuItemEntity) => MyAvatar.setCollisionsEnabled(!MyAvatar.getCollisionsEnabled()),
+			clickFunc: _target => MyAvatar.setCollisionsEnabled(!MyAvatar.getCollisionsEnabled()),
 		};
 	},
 	_target => {
 		return {
-			text: MyAvatar.getOtherAvatarsCollisionsEnabled() ? "[X] Avatar collisions" : "[   ] Avatar collisions",
+			text: MyAvatar.getOtherAvatarsCollisionsEnabled() ? "[X] Avatar collisions" : "[  ] Avatar collisions",
 			textColor: [127, 255, 255],
-			clickFunc: (target, menuItemEntity) => MyAvatar.setOtherAvatarsCollisionsEnabled(!MyAvatar.getOtherAvatarsCollisionsEnabled()),
+			clickFunc: _target => MyAvatar.setOtherAvatarsCollisionsEnabled(!MyAvatar.getOtherAvatarsCollisionsEnabled()),
 		};
 	},
 ];
@@ -65,22 +65,9 @@ const SELF_ACTIONS = [
 const OBJECT_ACTIONS = [
 	ent => {
 		if (Entities.getNestableType(ent) !== "entity") { return; }
-		const locked = Uuid.isNull(ent) || Entities.getEntityProperties(ent, "locked").locked;
+		const cloneable = Entities.getEntityProperties(ent, "cloneable").cloneable;
 
-		if (locked) { return; }
-
-		return {
-			text: "Delete",
-			textColor: [255, 0, 0],
-			clickFunc: ent => Entities.deleteEntity(ent),
-		};
-	},
-	ent => {
-		if (Entities.getNestableType(ent) !== "entity") { return; }
-		const props = Entities.getEntityProperties(ent, ["locked", "cloneable", "grab"]);
-		const locked = Uuid.isNull(ent) || props.locked || !(props.cloneable && props.grab?.grabbable);
-
-		if (locked) { return; }
+		if (!cloneable) { return; }
 
 		return {
 			text: "Clone",
@@ -89,8 +76,21 @@ const OBJECT_ACTIONS = [
 				const newEnt = Entities.cloneEntity(ent);
 				Entities.editEntity(newEnt, {
 					position: Vec3.sum(MyAvatar.position, Quat.getFront(MyAvatar.orientation)),
+					grab: {grabbable: true},
 				});
 			},
+		};
+	},
+	ent => {
+		if (Entities.getNestableType(ent) !== "entity") { return; }
+		const locked = Entities.getEntityProperties(ent, "locked").locked;
+
+		if (locked || !Entities.canAdjustLocks()) { return; }
+
+		return {
+			text: "Delete",
+			textColor: [255, 0, 0],
+			clickFunc: ent => Entities.deleteEntity(ent),
 		};
 	},
 ];
@@ -105,8 +105,6 @@ const ROOT_ACTIONS = [
 	}),
 	target => {
 		if (Entities.getNestableType(target) !== "entity") { return; }
-		if (!Entities.canRez() || Uuid.isNull(target)) { return; }
-
 		let userData = Entities.getEntityProperties(target, "userData").userData;
 
 		if (userData) {
@@ -142,48 +140,11 @@ const ROOT_ACTIONS = [
 	},
 ];
 
-let priorityAvatars = new Set();
-
-const AVATAR_ACTIONS = [
-	target => {
-		if (Entities.getNestableType(target) !== "avatar") { return; }
-
-		const muted = Users.getPersonalMuteStatus(target);
-
-		return {
-			text: muted ? "Unmute" : "Mute",
-			textColor: [255, 64, 0],
-			clickFunc: target => Users.personalMute(target, !muted),
-			priority: -50,
-		};
-	},
-	/*target => {
-		if (Entities.getNestableType(target) !== "avatar") { return; }
-
-		const isPriority = priorityAvatars.has(target);
-
-		const addPriority = target => {
-			priorityAvatars.add(target);
-		};
-
-		const remPriority = target => {
-			priorityAvatars.delete(target);
-		};
-
-		return {
-			text: isPriority ? "[X] Audio Priority" : "[  ] Audio Priority",
-			textColor: [255, 240, 64],
-			clickFunc: isPriority ? remPriority : addPriority,
-			priority: -49,
-		};
-	},*/
-];
-
 let registeredActionSets = {
 	"_ROOT": [...ROOT_ACTIONS],
 	"_SELF": [...SELF_ACTIONS],
 	"_OBJECT": [...OBJECT_ACTIONS],
-	"_AVATAR": [...AVATAR_ACTIONS],
+	"_AVATAR": [],
 	"_TARGET": [],
 };
 let registeredActionSetParents = {};
@@ -220,7 +181,6 @@ function ContextMenu_DeleteMenu() {
 	currentMenuTargetIsAvatar = false;
 	currentMenuTarget = Uuid.NULL;
 	currentMenuTargetLine = Uuid.NULL;
-	Controller.releaseEntityClickEvents();
 }
 
 function ContextMenu_EntityClick(eid, _event) {
@@ -287,8 +247,6 @@ function ContextMenu_OpenActions(actionSetName, page = 0) {
 
 	currentMenuInSubmenu = true;
 
-	Controller.captureEntityClickEvents();
-
 	const scale = MyAvatar.getAvatarScale();
 	const myAvatar = MyAvatar.sessionUUID;
 
@@ -319,7 +277,7 @@ function ContextMenu_OpenActions(actionSetName, page = 0) {
 
 	let activeActions = [];
 
-	let actions = [...baseActions];
+	let actions = [...Object.values(baseActions)];
 
 	for (const [setName, parent] of Object.entries(registeredActionSetParents)) {
 		if (parent === actionSetName) {

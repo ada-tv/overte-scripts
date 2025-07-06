@@ -12,7 +12,7 @@
 
 	if (!hasContextMenu) {
 		ScriptDiscoveryService.loadScript(Script.resolvePath("contextMenu.js"));
-		Window.displayAnnouncement("Press T on desktop or the A/X button in VR to open the context menu. Hold down the left mouse button or the trigger to open the context menu on a targeted object.");
+		Window.displayAnnouncement("Press B on desktop or the A/X button in VR to open the context menu. Hold down the left mouse button or the trigger to open the context menu on a targeted object.");
 	}
 }
 
@@ -23,14 +23,14 @@ const MAIN_CHANNEL = "net.thingvellir.context-menu";
 let registeredActionSets = {};
 let registeredActionSetParents = {};
 
-function ContextMenu_registerActionSet(name, itemData, parent = "_ROOT") {
+function ContextMenu_registerActionSet(name, itemData, parent) {
 	registeredActionSets[name] = itemData;
 	registeredActionSetParents[name] = parent;
 
 	Messages.sendLocalMessage(ACTIONS_CHANNEL, JSON.stringify({
 		func: "register",
 		name: name,
-		parent: parent ? parent : undefined,
+		parent: parent,
 		actionSet: itemData,
 	}));
 }
@@ -88,10 +88,30 @@ module.exports = {
 	MAIN_CHANNEL: MAIN_CHANNEL,
 
 	/**
+	 * The top-level set first opened if not overridden by the target.
+	 */
+	ROOT_SET: "_ROOT",
+
+	/**
+	 * The "My Avatar" submenu in the context menu root.
+	 */
+	SELF_SET: "_SELF",
+
+	/**
+	 * The "Object" submenu in the context menu root when an object is targeted.
+	 */
+	OBJECT_SET: "_OBJECT",
+
+	/**
+	 * The "Avatar" submenu in the context menu root when an avatar is targeted.
+	 */
+	AVATAR_SET: "_AVATAR",
+
+	/**
 	 * Registers a new action set for the context menu.
 	 * @param {string} name - The name of the action set
 	 * @param {(Object|Object[])} actions - The action information
-	 * @param {string} [parent] - The parent of the action set. Built-in sets are "_ROOT", "_SELF", "_OBJECT", and "_AVATAR"
+	 * @param {string} [parent] - The parent of the action set. Built-in sets are "_ROOT", "_SELF", "_OBJECT", and "_AVATAR". If no parent is set, the action set will only be accessible through another action's "submenu" property.
 	 */
 	registerActionSet: ContextMenu_registerActionSet,
 

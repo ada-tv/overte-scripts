@@ -1,3 +1,5 @@
+const MODEL_URL = Script.resolvePath("../dungeoncrawl/assets/models/sword.glb");
+
 const entities = [
 	// attached to sensor-to-world joint
 	Entities.addEntity({
@@ -17,7 +19,7 @@ const entities = [
 		parentJointIndex: 65534,
 		localPosition: [0.1, 1.5, -0.5],
 		dimensions: [0.1, 0.1, 0.1],
-		modelURL: "http://thingvellir.net/share/overte/bevy_doll.glb"
+		modelURL: MODEL_URL
 	}, "local"),
 
 	// attached to avatar without joint
@@ -36,7 +38,7 @@ const entities = [
 		parentID: MyAvatar.SELF_ID,
 		localPosition: [0.1, 0.6, -0.7],
 		dimensions: [0.1, 0.1, 0.1],
-		modelURL: "http://thingvellir.net/share/overte/bevy_doll.glb"
+		modelURL: MODEL_URL
 	}, "local"),
 ];
 
