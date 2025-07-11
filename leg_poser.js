@@ -88,6 +88,8 @@ function LP_AnimHandlerFunc(_dummy) {
 }
 
 function LP_CreateHandles(jointNames) {
+	const avatarScale = MyAvatar.scale;
+
 	for (const joint of jointNames) {
 		const jointIndex = MyAvatar.getJointIndex(joint);
 
@@ -99,12 +101,14 @@ function LP_CreateHandles(jointNames) {
 			color = [0, 0, 255];
 		}
 
+		const handleSize = Vec3.multiply(HMD.active ? [0.05, 0.05, 0.8] : [0.15, 0.15, 0.15], avatarScale);
+
 		jointHandleEntities[joint] = Entities.addEntity({
 			type: "Box",
 			name: `Body poser handle (${joint})`,
 			parentID: MyAvatar.sessionUUID,
 			localPosition: MyAvatar.getAbsoluteDefaultJointTranslationInObjectFrame(jointIndex),
-			localDimensions: HMD.active ? [0.05, 0.05, 0.8] : [0.15, 0.15, 0.15],
+			localDimensions: handleSize,
 			collisionless: true,
 			alpha: (USE_GRAB_HACK && !PUBLIC_HANDLES) ? 0.0 : 0.5,
 			color: color,
@@ -121,7 +125,7 @@ function LP_CreateHandles(jointNames) {
 				parentID: jointHandleEntities[joint],
 				type: "Box",
 				name: `Body poser handle visual (${joint})`,
-				localDimensions: [0.05, 0.05, 0.8],
+				localDimensions: handleSize,
 				collisionless: true,
 				alpha: 0.5,
 				color: color,
