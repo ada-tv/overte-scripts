@@ -60,10 +60,9 @@ function LP_AnimHandlerFunc(_dummy) {
 		headPosition: data["Head"]["position"],
 		headRotation: data["Head"]["rotation"],
 
-		// on desktop spine2 doesn't seem to have enough flexibility to be particularly useful
-		/*spine2Type: 0,
+		spine2Type: 0,
 		spine2Position: data["Spine2"]["position"],
-		spine2Rotation: data["Spine2"]["rotation"],*/
+		spine2Rotation: data["Spine2"]["rotation"],
 
 		leftHandType: 0,
 		leftHandIKPositionVar: "leftHandPosition",
@@ -85,11 +84,7 @@ function LP_AnimHandlerFunc(_dummy) {
 		rightHandPoleVector: Vec3.multiply(-1, Quat.getForward(data["RightHand"]["rotation"])),*/
 	};
 
-	if (HMD.active) {
-		return { ...lowerBody };
-	} else {
-		return { ...lowerBody, ...upperBody };
-	}
+	return { ...lowerBody, ...upperBody };
 }
 
 function LP_CreateHandles(jointNames) {
@@ -109,13 +104,14 @@ function LP_CreateHandles(jointNames) {
 			name: `Body poser handle (${joint})`,
 			parentID: MyAvatar.sessionUUID,
 			localPosition: MyAvatar.getAbsoluteDefaultJointTranslationInObjectFrame(jointIndex),
-			localDimensions: [0.05, 0.05, 0.8],
+			localDimensions: HMD.active ? [0.05, 0.05, 0.8] : [0.15, 0.15, 0.15],
 			collisionless: true,
 			alpha: (USE_GRAB_HACK && !PUBLIC_HANDLES) ? 0.0 : 0.5,
 			color: color,
 			unlit: true,
 			visible: handlesVisible,
 			grab: {grabbable: handlesVisible},
+			renderLayer: "front",
 		}, (USE_GRAB_HACK || PUBLIC_HANDLES) ? "avatar" : "local");
 
 		// local entities aren't properly grabbable on 2025.05.1,
@@ -220,7 +216,7 @@ Messages.messageReceived.connect((channel, msg, senderID, _localOnly) => {
 			LP_CreateHandles(
 				HMD.active
 					? ["Hips", "LeftFoot", "RightFoot"]
-					: ["Hips", "LeftFoot", "RightFoot", "Head", "LeftHand", "RightHand"]
+					: ["Hips", "Head", "Spine2", "LeftFoot", "LeftHand", "RightFoot", "RightHand"]
 				);
 		} else {
 			LP_DeleteHandles();

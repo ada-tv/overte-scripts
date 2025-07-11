@@ -57,7 +57,7 @@ const actionSet = [
 	},
 ];
 
-ContextMenu.registerActionSet("flashlight", actionSet, "_SELF");
+ContextMenu.registerActionSet("flashlight", actionSet, ContextMenu.SELF_SET);
 
 Messages.messageReceived.connect((channel, msg, senderID, localOnly) => {
 	if (channel !== ContextMenu.CLICK_FUNC_CHANNEL) { return; }

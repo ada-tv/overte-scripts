@@ -42,7 +42,7 @@ const actionFuncs = {
 	"localMirror.toggle": () => ToggleMirror(),
 };
 
-ContextMenu.registerActionSet("localMirror", actionSet);
+ContextMenu.registerActionSet("localMirror", actionSet, ContextMenu.ROOT_SET);
 
 Messages.messageReceived.connect((channel, msg, senderID, localOnly) => {
 	if (channel !== ContextMenu.CLICK_FUNC_CHANNEL) { return; }
