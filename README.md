@@ -29,3 +29,5 @@ Allows players to grab eachother's avatar. Requires both the grabber and grabee 
 Press `{` to lay an egg.
 * [Gravity gloves](gravity_gloves.js)<br>
 Currently broken
+* [Violence](violence.js)<br>
+Adds colliders to your hands, head, and feet so you can shove people around.
