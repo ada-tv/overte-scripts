@@ -8,9 +8,16 @@ if (USE_GRAB_HACK) {
 	console.warn("Grabbable local entities not supported, using workaround… Other players won't see the handles, but will still be able to grab them!");
 }
 
+let settings = Settings.getValue("Body Poser", {
+	upperBodyHandles: true,
+	lowerBodyHandles: true,
+});
+let presets = Settings.getValue("Body Poser/Presets", {});
+
 let hasHandles = false;
 let enabled = false;
 let handlesVisible = true;
+let frozenAnimation = false;
 
 let animHandler;
 const jointHandleEntities = {};
@@ -31,7 +38,7 @@ function LP_AnimHandlerFunc(_dummy) {
 		data[name] = { position: localPosition, rotation: localRotation };
 	}
 
-	const lowerBody = {
+	const lowerBody = !settings.lowerBodyHandles ? {} : {
 		leftFootIKEnabled: true,
 		leftFootIKPositionVar: "leftFootPosition",
 		leftFootIKRotationVar: "leftFootRotation",
@@ -55,7 +62,7 @@ function LP_AnimHandlerFunc(_dummy) {
 		hipsRotation: data["Hips"]["rotation"],
 	};
 
-	const upperBody = HMD.active ? {} : {
+	const upperBody = HMD.active || !settings.upperBodyHandles ? {} : {
 		headType: 0,
 		headPosition: data["Head"]["position"],
 		headRotation: data["Head"]["rotation"],
@@ -137,8 +144,12 @@ function LP_CreateHandles(jointNames) {
 		}
 	}
 
-	for (const role of MyAvatar.getAnimationRoles()) {
-		MyAvatar.overrideRoleAnimation(role, "qrc:/avatar/animations/idle.fbx", 1, true, 1, 1);
+	if (!HMD.active && settings.upperBodyHandles && settings.lowerBodyHandles) {
+		frozenAnimation = true;
+
+		for (const role of MyAvatar.getAnimationRoles()) {
+			MyAvatar.overrideRoleAnimation(role, "qrc:/avatar/animations/idle.fbx", 1, true, 1, 1);
+		}
 	}
 
 	animHandler = MyAvatar.addAnimationStateHandler(LP_AnimHandlerFunc, null);
@@ -149,8 +160,12 @@ function LP_DeleteHandles() {
 	hasHandles = false;
 	MyAvatar.removeAnimationStateHandler(animHandler);
 
-	for (const role of MyAvatar.getAnimationRoles()) {
-		MyAvatar.restoreRoleAnimation(role);
+	if (frozenAnimation) {
+		frozenAnimation = false;
+
+		for (const role of MyAvatar.getAnimationRoles()) {
+			MyAvatar.restoreRoleAnimation(role);
+		}
 	}
 
 	for (const joint in jointHandleEntities) {
@@ -178,26 +193,53 @@ function LP_ShowHandles() {
 Script.scriptEnding.connect(() => {
 	LP_DeleteHandles();
 	ContextMenu.unregisterActionSet("bodyPoser");
+	ContextMenu.unregisterActionSet("bodyPoser.menu");
+	ContextMenu.unregisterActionSet("bodyPoser.settings");
+	ContextMenu.unregisterActionSet("bodyPoser.presets");
+	Settings.setValue("Body Poser", settings);
+	Settings.setValue("Body Poser/Presets", presets);
 });
 
 const actionSet = [
 	{
-		text: ">  [X] Poser handles",
+		text: "[  ] Enabled",
+		localClickFunc: "bodyPoser.toggle",
+		priority: -5,
+	},
+	{
+		text: "[X] Show handles",
 		localClickFunc: "bodyPoser.toggleHandles",
-		backgroundColor: [0, 0, 0],
 		textColor: [128, 128, 128],
 		priority: -4.9,
 	},
 	{
-		text: "Poser",
-		localClickFunc: "bodyPoser.toggle",
-		backgroundColor: [0, 0, 0],
-		textColor: [0, 255, 64],
-		priority: -5,
+		text: "> Presets",
+		submenu: "bodyPoser.presets",
+		priority: -4.8,
+	},
+	{
+		text: "> Settings",
+		submenu: "bodyPoser.settings",
+		priority: -4.8,
 	},
 ];
 
-ContextMenu.registerActionSet("bodyPoser", actionSet, "_SELF");
+const settingsActions = [
+	{ localClickFunc: "bodyPoser.setting.toggleUpperBody", text: "[X] Upper body" },
+	{ localClickFunc: "bodyPoser.setting.toggleLowerBody", text: "[X] Lower body" },
+];
+
+ContextMenu.registerActionSet("bodyPoser", [{
+	text: "> Poser",
+	submenu: "bodyPoser.menu",
+	backgroundColor: [0, 0, 0],
+	textColor: [0, 255, 64],
+	priority: -5,
+}], "_SELF");
+
+ContextMenu.registerActionSet("bodyPoser.menu", actionSet, undefined, "Body Poser");
+ContextMenu.registerActionSet("bodyPoser.settings", settingsActions, undefined, "Body Poser/Settings");
+ContextMenu.registerActionSet("bodyPoser.presets", [], undefined, "Body Poser/Presets");
 
 Messages.messageReceived.connect((channel, msg, senderID, _localOnly) => {
 	if (channel !== ContextMenu.CLICK_FUNC_CHANNEL) { return; }
@@ -217,27 +259,41 @@ Messages.messageReceived.connect((channel, msg, senderID, _localOnly) => {
 		enabled = !enabled;
 
 		if (enabled) {
-			LP_CreateHandles(
-				HMD.active
-					? ["Hips", "LeftFoot", "RightFoot"]
-					: ["Hips", "Head", "Spine2", "LeftFoot", "LeftHand", "RightFoot", "RightHand"]
-				);
+			let handles = [];
+			if (settings.lowerBodyHandles) {
+				handles.push("Hips", "LeftFoot", "RightFoot");
+			}
+			if (settings.upperBodyHandles && !HMD.active) {
+				handles.push("Head", "Spine2", "LeftHand", "RightHand");
+			}
+
+			LP_CreateHandles(handles);
 		} else {
 			LP_DeleteHandles();
 		}
 	}
 
 	if (data.funcName.startsWith("bodyPoser.toggle")) {
-		const fgColor = enabled ? [255, 255, 255] : [0, 255, 96];
-		const bgColor = enabled ? [0, 64, 24] : [0, 0, 0];
+		actionSet[0].text = enabled ? "[X] Enabled" : "[  ] Enabled";
 
-		actionSet[0].text = handlesVisible ? ">  [X] Show handles" : ">  [  ] Show handles";
-		actionSet[0].backgroundColor = bgColor;
-		actionSet[0].textColor = enabled ? [255, 255, 255] : [128, 128, 128];
+		actionSet[1].text = handlesVisible ? "[X] Show handles" : "[  ] Show handles";
+		actionSet[1].textColor = enabled ? [255, 255, 255] : [128, 128, 128];
 
-		actionSet[1].backgroundColor = bgColor;
-		actionSet[1].textColor = fgColor;
+		ContextMenu.editActionSet("bodyPoser.menu", actionSet);
+	}
 
-		ContextMenu.editActionSet("bodyPoser", actionSet);
+	if (data.funcName.startsWith("bodyPoser.setting")) {
+		if (data.funcName === "bodyPoser.setting.toggleUpperBody") {
+			settings.upperBodyHandles = !settings.upperBodyHandles;
+		}
+		if (data.funcName === "bodyPoser.setting.toggleLowerBody") {
+			settings.lowerBodyHandles = !settings.lowerBodyHandles;
+		}
+
+		settingsActions[0].text = settings.upperBodyHandles ? "[X] Upper body" : "[  ] Upper body";
+		settingsActions[1].text = settings.lowerBodyHandles ? "[X] Lower body" : "[  ] Lower body";
+		ContextMenu.editActionSet("bodyPoser.settings", settingsActions);
+
+		Settings.setValue("Body Poser", settings);
 	}
 });

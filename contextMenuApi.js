@@ -22,16 +22,20 @@ const MAIN_CHANNEL = "net.thingvellir.context-menu";
 
 let registeredActionSets = {};
 let registeredActionSetParents = {};
+let registeredActionSetTitles = {};
 
-function ContextMenu_registerActionSet(name, itemData, parent) {
+function ContextMenu_registerActionSet(name, itemData, parent, title, desc) {
 	registeredActionSets[name] = itemData;
 	registeredActionSetParents[name] = parent;
+	registeredActionSetTitles[name] = { title: title, description: desc };
 
 	Messages.sendLocalMessage(ACTIONS_CHANNEL, JSON.stringify({
 		func: "register",
 		name: name,
 		parent: parent,
 		actionSet: itemData,
+		title: title,
+		description: desc,
 	}));
 }
 
@@ -55,6 +59,8 @@ function ContextMenu_messageReceived(channel, msg, senderID, localOnly) {
 				name: name,
 				parent: registeredActionSetParents[name],
 				actionSet: set,
+				title: registeredActionSetTitles[name].title,
+				description: registeredActionSetTitles[name].description,
 			}));
 		}
 	}
@@ -112,6 +118,8 @@ module.exports = {
 	 * @param {string} name - The name of the action set
 	 * @param {(Object|Object[])} actions - The action information
 	 * @param {string} [parent] - The parent of the action set. Built-in sets are "_ROOT", "_SELF", "_OBJECT", and "_AVATAR". If no parent is set, the action set will only be accessible through another action's "submenu" property.
+	 * @param {string} [title] - The name of this action set, if used as a submenu.
+	 * @param {string} [desc] - The description of this action set, if used as a submenu.
 	 */
 	registerActionSet: ContextMenu_registerActionSet,
 

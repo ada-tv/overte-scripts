@@ -7,6 +7,7 @@ const leave_action = Controller.findAction("TranslateY");
 const ContextMenu = Script.require(Script.resolvePath("contextMenuApi.js"));
 
 let grabActiveEnabled = true, grabTargetEnabled = true;
+let desktopGrabToggled = false;
 
 const contextActionSet = {
 	toggleActive: {
@@ -266,13 +267,16 @@ function S_InputEvent(action, value) {
 function S_KeyPressEvent(event) {
 	if (event.text !== "g" || event.isAutoRepeat) { return; }
 	S_Dbg(`S_KeyPressEvent(${JSON.stringify(event)})`);
-	S_GrabSend("RightHand");
-}
 
-function S_KeyReleaseEvent(event) {
-	if (event.text !== "g" || event.isAutoRepeat) { return; }
-	S_Dbg(`S_KeyReleaseEvent(${JSON.stringify(event)})`);
-	S_ReleaseSend("RightHand");
+	if (desktopGrabToggled) {
+		S_ReleaseSend("RightHand");
+		Window.displayAnnouncement("Letting go with right hand");
+		desktopGrabToggled = false;
+	} else {
+		S_GrabSend("RightHand");
+		Window.displayAnnouncement("Grabbing with right hand");
+		desktopGrabToggled = true;
+	}
 }
 
 function S_MsgRecv(channel, rawdata, senderID, localOnly) {
@@ -285,13 +289,13 @@ function S_MsgRecv(channel, rawdata, senderID, localOnly) {
 			case "avatarGrabSettings.toggleActive":
 				grabActiveEnabled = !grabActiveEnabled;
 				contextActionSet.toggleActive.text = (grabActiveEnabled ? "[X]" : "[   ]") + " Can grab avatars";
-				ContextMenu.editActionSet("avatarGrabSettings", contextActionSet);
+				ContextMenu.editActionSet("avatarGrab.settings", contextActionSet);
 				break;
 
 			case "avatarGrabSettings.toggleTarget":
 				grabTargetEnabled = !grabTargetEnabled;
 				contextActionSet.toggleTarget.text = (grabTargetEnabled ? "[X]" : "[   ]") + " Can be grabbed";
-				ContextMenu.editActionSet("avatarGrabSettings", contextActionSet);
+				ContextMenu.editActionSet("avatarGrab.settings", contextActionSet);
 				break;
 		}
 
@@ -315,10 +319,13 @@ Messages.subscribe(msgChannel);
 Messages.messageReceived.connect(S_MsgRecv);
 Controller.inputEvent.connect(S_InputEvent);
 Controller.keyPressEvent.connect(S_KeyPressEvent);
-Controller.keyReleaseEvent.connect(S_KeyReleaseEvent);
 
 if (ContextMenu) {
-	ContextMenu.registerActionSet("avatarGrabSettings", contextActionSet, "_SELF");
+	ContextMenu.registerActionSet("avatarGrab", [{
+		text: "> Avatar Grab",
+		submenu: "avatarGrab.settings",
+	}], "_SELF");
+	ContextMenu.registerActionSet("avatarGrab.settings", contextActionSet);
 }
 
 Script.scriptEnding.connect(() => {
@@ -326,11 +333,15 @@ Script.scriptEnding.connect(() => {
 	Controller.inputEvent.disconnect(S_InputEvent);
 	Controller.actionEvent.disconnect(S_LeaveEvent);
 	Controller.keyPressEvent.disconnect(S_KeyPressEvent);
-	Controller.keyReleaseEvent.disconnect(S_KeyReleaseEvent);
 	Messages.messageReceived.disconnect(S_MsgRecv);
 	Messages.unsubscribe(msgChannel);
 
+	if (desktopGrabToggled) {
+			S_ReleaseSend("RightHand");
+	}
+
 	if (ContextMenu) {
-		ContextMenu.unregisterActionSet("avatarGrabSettings");
+		ContextMenu.unregisterActionSet("avatarGrab");
+		ContextMenu.unregisterActionSet("avatarGrab.settings");
 	}
 });

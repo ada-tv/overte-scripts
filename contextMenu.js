@@ -143,6 +143,7 @@ let registeredActionSets = {
 	"_TARGET": [],
 };
 let registeredActionSetParents = {};
+let registeredActionSetTitles = {};
 
 const targetingPick = [
 	Picks.createPick(PickType.Ray, {
@@ -356,6 +357,14 @@ function ContextMenu_OpenActions(actionSetName, page = 0) {
 		}
 	} else {
 		titleText = "Self";
+	}
+
+	if (registeredActionSetTitles[actionSetName]?.title) {
+		titleText = registeredActionSetTitles[actionSetName].title;
+	}
+	
+	if (registeredActionSetTitles[actionSetName]?.description) {
+		descriptionText = registeredActionSetTitles[actionSetName].description;
 	}
 
 	if (descriptionText) {
@@ -697,9 +706,11 @@ function ContextMenu_Message(channel, msg, senderID, localOnly) {
 		if (data.parent) {
 			registeredActionSetParents[data.name] = data.parent;
 		}
+		registeredActionSetTitles[data.name] = {title: data?.title, description: data?.description};
 	} else if (data?.func === "unregister") {
 		delete registeredActionSets[data.name];
 		delete registeredActionSetParents[data.name];
+		delete registeredActionSetTitles[data.name];
 	} else if (data?.func === "edit") {
 		if (!(data.name in registeredActionSets)) {
 			console.error(`ContextMenu_Message: tried to edit unregistered action set "${data.name}"`);
