@@ -225,8 +225,14 @@ const actionSet = [
 ];
 
 const settingsActions = [
-	{ localClickFunc: "bodyPoser.setting.toggleUpperBody", text: "[X] Upper body" },
-	{ localClickFunc: "bodyPoser.setting.toggleLowerBody", text: "[X] Lower body" },
+	{
+		localClickFunc: "bodyPoser.setting.toggleUpperBody",
+		text: settings.upperBodyHandles ? "[X] Upper body" : "[  ] Upper body",
+	},
+	{
+		localClickFunc: "bodyPoser.setting.toggleLowerBody",
+		text: settings.lowerBodyHandles ? "[X] Lower body" : "[  ] Lower body",
+	},
 ];
 
 ContextMenu.registerActionSet("bodyPoser", [{

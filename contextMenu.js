@@ -179,7 +179,8 @@ function ContextMenu_DeleteMenu() {
 	currentMenuTargetLine = Uuid.NULL;
 }
 
-function ContextMenu_EntityClick(eid, _event) {
+function ContextMenu_EntityClick(eid, event) {
+	if (!event.isPrimaryButton) { return; }
 	if (!currentMenuEntities.has(eid)) { return; }
 
 	currentMenuInSubmenu = false;
@@ -274,7 +275,7 @@ function ContextMenu_OpenActions(actionSetName, page = 0) {
 	}
 
 	for (const action of actions) {
-		let actionData = action(currentMenuTarget, currentMenuTargetIsAvatar);
+		let actionData = action(currentMenuTarget);
 
 		if (!actionData || Object.keys(actionData).length === 0) { continue; }
 
@@ -373,7 +374,6 @@ function ContextMenu_OpenActions(actionSetName, page = 0) {
 			type: "Text",
 			position: Vec3.sum(origin, Vec3.multiplyQbyV(angle, [0, yPos, 0])),
 			rotation: angle,
-			renderLayer: "front",
 			dimensions: [0.3 * scale, 0.2 * scale, 0.01 * scale],
 			text: descriptionText,
 			textColor: [255, 255, 255],
@@ -402,7 +402,6 @@ function ContextMenu_OpenActions(actionSetName, page = 0) {
 		type: "Text",
 		position: Vec3.sum(origin, Vec3.multiplyQbyV(angle, [0, yPos, 0])),
 		rotation: angle,
-		renderLayer: "front",
 		dimensions: [0.215 * scale, 0.04 * scale, 0.01 * scale],
 		text: titleText,
 		textColor: [230, 230, 230],
@@ -423,7 +422,6 @@ function ContextMenu_OpenActions(actionSetName, page = 0) {
 		type: "Text",
 		position: Vec3.sum(origin, Vec3.multiplyQbyV(angle, [-0.13 * scale, yPos, 0])),
 		rotation: angle,
-		renderLayer: "front",
 		dimensions: [0.04 * scale, 0.04 * scale, 0.01 * scale],
 		text: hasPages && page > 0 ? "<" : "",
 		textColor: [230, 230, 230],
@@ -447,7 +445,6 @@ function ContextMenu_OpenActions(actionSetName, page = 0) {
 		type: "Text",
 		position: Vec3.sum(origin, Vec3.multiplyQbyV(angle, [0.13 * scale, yPos, 0])),
 		rotation: angle,
-		renderLayer: "front",
 		dimensions: [0.04 * scale, 0.04 * scale, 0.01 * scale],
 		text: hasPages && page < maxPages ? ">" : "",
 		textColor: [230, 230, 230],
@@ -478,7 +475,6 @@ function ContextMenu_OpenActions(actionSetName, page = 0) {
 			type: "Text",
 			position: pos,
 			rotation: angle,
-			renderLayer: "front",
 			dimensions: [0.3 * scale, 0.05 * scale, 0.0001 * scale],
 			text: action.text,
 			textColor: action.textColor ?? [255, 255, 255],
@@ -503,7 +499,6 @@ function ContextMenu_OpenActions(actionSetName, page = 0) {
 				type: "Image",
 				position: pos,
 				rotation: angle,
-				renderLayer: "front",
 				dimensions: [0.03 * scale, 0.03 * scale, 0.01 * scale],
 				imageURL: action.iconImage,
 				emissive: true,
@@ -546,7 +541,6 @@ function ContextMenu_OpenActions(actionSetName, page = 0) {
 			type: "Text",
 			position: pos,
 			rotation: angle,
-			renderLayer: "front",
 			dimensions: [0.3 * scale, 0.05 * scale, 0.0001 * scale],
 			text: "(No actions)",
 			textColor: [230, 230, 230],
@@ -569,10 +563,13 @@ function ContextMenu_OpenActions(actionSetName, page = 0) {
 
 	for (let a of actionEnts) {
 		if (CONTEXT_MENU_SETTINGS.parented ?? true) {
-			a["parentID"] = myAvatar;
-			a["parentJointIndex"] = HMD.active ? SENSOR_TO_WORLD_MATRIX_INDEX : CAMERA_MATRIX_INDEX;
+			a.parentID = myAvatar;
+			a.parentJointIndex = HMD.active ? SENSOR_TO_WORLD_MATRIX_INDEX : CAMERA_MATRIX_INDEX;
 		}
-		a["font"] = CONTEXT_MENU_FONT;
+		a.font = CONTEXT_MENU_FONT;
+		a.canCastShadow = false;
+		a.isVisibleInSecondaryCamera = false;
+		a.renderLayer = "front";
 		const e = Entities.addEntity(a, (CONTEXT_MENU_SETTINGS.public ?? false) ? "avatar" : "local");
 		currentMenuEntities.add(e);
 	}

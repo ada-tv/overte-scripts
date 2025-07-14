@@ -26,6 +26,8 @@ function ToggleMirror() {
 			position: origin,
 			rotation: angle,
 			mirrorMode: "mirror",
+			canCastShadow: false,
+			isVisibleInSecondaryCamera: false,
 		}, "local");
 	}
 }
