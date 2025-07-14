@@ -7,16 +7,27 @@ const leave_action = Controller.findAction("TranslateY");
 const ContextMenu = Script.require(Script.resolvePath("contextMenuApi.js"));
 
 let grabActiveEnabled = true, grabTargetEnabled = true;
-let desktopGrabToggled = false;
+let footGrabEnabled = false, headGrabEnabled = false;
+let desktopGrabToggled = false, grabbedWithHead = false;
 
 const contextActionSet = {
 	toggleActive: {
 		text: "[X] Can grab avatars",
 		localClickFunc: "avatarGrabSettings.toggleActive",
+		textColor: [255, 240, 64],
 	},
 	toggleTarget: {
 		text: "[X] Can be grabbed",
 		localClickFunc: "avatarGrabSettings.toggleTarget",
+		textColor: [255, 240, 64],
+	},
+	toggleFeetGrab: {
+		text: "[  ] Grab with feet (VR grips)",
+		localClickFunc: "avatarGrabSettings.toggleFeetGrab",
+	},
+	toggleHeadGrab: {
+		text: "[  ] Grab with head (Right VR grip or G)",
+		localClickFunc: "avatarGrabSettings.toggleHeadGrab",
 	},
 };
 
@@ -255,10 +266,20 @@ function S_InputEvent(action, value) {
 			S_GrabSend("RightHand");
 			rightGrabAlreadySent = true;
 			rightReleaseAlreadySent = false;
+
+			if (headGrabEnabled || grabbedWithHead) {
+				S_ReleaseSend("Head");
+				grabbedWithHead = false;
+			}
 		} else if (value < 0.2 && !rightReleaseAlreadySent) {
 			S_ReleaseSend("RightHand");
 			rightGrabAlreadySent = false;
 			rightReleaseAlreadySent = true;
+
+			if (headGrabEnabled) {
+				S_GrabSend("Head");
+				grabbedWithHead = true;
+			}
 		}
 		return;
 	}
@@ -270,11 +291,19 @@ function S_KeyPressEvent(event) {
 
 	if (desktopGrabToggled) {
 		S_ReleaseSend("RightHand");
-		Window.displayAnnouncement("Letting go with right hand");
+		if (headGrabEnabled || grabbedWithHead) {
+			S_ReleaseSend("Head");
+			grabbedWithHead = false;
+		}
+		Window.displayAnnouncement("Letting go");
 		desktopGrabToggled = false;
 	} else {
 		S_GrabSend("RightHand");
-		Window.displayAnnouncement("Grabbing with right hand");
+		if (headGrabEnabled) {
+			S_GrabSend("Head");
+			grabbedWithHead = true;
+		}
+		Window.displayAnnouncement("Grabbing");
 		desktopGrabToggled = true;
 	}
 }
@@ -295,6 +324,18 @@ function S_MsgRecv(channel, rawdata, senderID, localOnly) {
 			case "avatarGrabSettings.toggleTarget":
 				grabTargetEnabled = !grabTargetEnabled;
 				contextActionSet.toggleTarget.text = (grabTargetEnabled ? "[X]" : "[   ]") + " Can be grabbed";
+				ContextMenu.editActionSet("avatarGrab.settings", contextActionSet);
+				break;
+
+			case "avatarGrabSettings.toggleFeetGrab":
+				footGrabEnabled = !footGrabEnabled;
+				contextActionSet.toggleFeetGrab.text = (footGrabEnabled ? "[X]" : "[   ]") + " Grab with feet (VR grips)";
+				ContextMenu.editActionSet("avatarGrab.settings", contextActionSet);
+				break;
+
+			case "avatarGrabSettings.toggleHeadGrab":
+				headGrabEnabled = !headGrabEnabled;
+				contextActionSet.toggleHeadGrab.text = (headGrabEnabled ? "[X]" : "[   ]") + " Grab with head (Right VR grip or G)";
 				ContextMenu.editActionSet("avatarGrab.settings", contextActionSet);
 				break;
 		}
@@ -325,7 +366,7 @@ if (ContextMenu) {
 		text: "> Avatar Grab",
 		submenu: "avatarGrab.settings",
 	}], "_SELF");
-	ContextMenu.registerActionSet("avatarGrab.settings", contextActionSet);
+	ContextMenu.registerActionSet("avatarGrab.settings", contextActionSet, undefined, "Avatar Grab");
 }
 
 Script.scriptEnding.connect(() => {
@@ -337,7 +378,8 @@ Script.scriptEnding.connect(() => {
 	Messages.unsubscribe(msgChannel);
 
 	if (desktopGrabToggled) {
-			S_ReleaseSend("RightHand");
+		S_ReleaseSend("RightHand");
+		S_ReleaseSend("Head");
 	}
 
 	if (ContextMenu) {

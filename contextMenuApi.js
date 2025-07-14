@@ -45,7 +45,7 @@ function ContextMenu_unregisterActionSet(name) {
 	Messages.sendLocalMessage(ACTIONS_CHANNEL, JSON.stringify({func: "unregister", name: name}));
 }
 
-function ContextMenu_messageReceived(channel, msg, senderID, localOnly) {
+function ContextMenu_messageReceived(channel, msg, senderID, _localOnly) {
 	if (channel !== MAIN_CHANNEL) { return; }
 	if (senderID !== MyAvatar.sessionUUID) { return; }
 
