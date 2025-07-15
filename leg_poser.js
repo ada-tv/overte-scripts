@@ -11,6 +11,7 @@ if (USE_GRAB_HACK) {
 let settings = Settings.getValue("Body Poser", {
 	upperBodyHandles: true,
 	lowerBodyHandles: true,
+	hipsHandle: true,
 });
 let presets = Settings.getValue("Body Poser/Presets", {});
 
@@ -56,7 +57,9 @@ function LP_AnimHandlerFunc(_dummy) {
 
 		rightFootPoleVectorEnabled: true,
 		rightFootPoleVector: Vec3.multiply(-1, Quat.getForward(data["RightFoot"]["rotation"])),
+	};
 
+	const hips = !settings.hipsHandle ? {} : {
 		hipsType: 0,
 		hipsPosition: data["Hips"]["position"],
 		hipsRotation: data["Hips"]["rotation"],
@@ -91,7 +94,7 @@ function LP_AnimHandlerFunc(_dummy) {
 		rightHandPoleVector: Vec3.multiply(-1, Quat.getForward(data["RightHand"]["rotation"])),*/
 	};
 
-	return { ...lowerBody, ...upperBody };
+	return { ...lowerBody, ...hips, ...upperBody };
 }
 
 function LP_CreateHandles(jointNames) {
@@ -233,6 +236,10 @@ const settingsActions = [
 		localClickFunc: "bodyPoser.setting.toggleLowerBody",
 		text: settings.lowerBodyHandles ? "[X] Lower body" : "[  ] Lower body",
 	},
+	{
+		localClickFunc: "bodyPoser.setting.toggleHips",
+		text: settings.hipsHandle ? "[X] Hips handle" : "[  ] Hips handle",
+	},
 ];
 
 ContextMenu.registerActionSet("bodyPoser", [{
@@ -266,8 +273,11 @@ Messages.messageReceived.connect((channel, msg, senderID, _localOnly) => {
 
 		if (enabled) {
 			let handles = [];
+			if (settings.hipsHandle) {
+				handles.push("Hips");
+			}
 			if (settings.lowerBodyHandles) {
-				handles.push("Hips", "LeftFoot", "RightFoot");
+				handles.push("LeftFoot", "RightFoot");
 			}
 			if (settings.upperBodyHandles && !HMD.active) {
 				handles.push("Head", "Spine2", "LeftHand", "RightHand");
@@ -295,9 +305,13 @@ Messages.messageReceived.connect((channel, msg, senderID, _localOnly) => {
 		if (data.funcName === "bodyPoser.setting.toggleLowerBody") {
 			settings.lowerBodyHandles = !settings.lowerBodyHandles;
 		}
+		if (data.funcName === "bodyPoser.setting.toggleHips") {
+			settings.hipsHandle = !settings.hipsHandle;
+		}
 
 		settingsActions[0].text = settings.upperBodyHandles ? "[X] Upper body" : "[  ] Upper body";
 		settingsActions[1].text = settings.lowerBodyHandles ? "[X] Lower body" : "[  ] Lower body";
+		settingsActions[2].text = settings.hipsHandle ? "[X] Hips handle" : "[  ] Hips handle";
 		ContextMenu.editActionSet("bodyPoser.settings", settingsActions);
 
 		Settings.setValue("Body Poser", settings);
