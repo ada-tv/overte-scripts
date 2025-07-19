@@ -54,7 +54,7 @@
 
 		const {position, rotation} = Entities.getEntityProperties(selfID, ["position", "rotation"]);
 		previousAvatarXform = [MyAvatar.position, MyAvatar.orientation];
-		MyAvatar.beginSit(Vec3.sum(position, Vec3.multiplyQbyV(rotation, [0, 0.2, 0])), rotation);
+		MyAvatar.beginSit(Vec3.sum(position, Vec3.multiplyQbyV(rotation, [0, 0.1, 0])), rotation);
 		Messages.sendLocalMessage(MSG_CHANNEL, JSON.stringify({ seatID: selfID, sitting: true }));
 		Entities.editEntity(visualID, { visible: false });
 		isSitting = true;
