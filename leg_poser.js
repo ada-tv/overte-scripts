@@ -12,6 +12,8 @@ let settings = Settings.getValue("Body Poser", {
 	upperBodyHandles: true,
 	lowerBodyHandles: true,
 	hipsHandle: true,
+	spine2Handle: true,
+	headHandle: true,
 });
 let presets = Settings.getValue("Body Poser/Presets", {});
 
@@ -59,21 +61,25 @@ function LP_AnimHandlerFunc(_dummy) {
 		rightFootPoleVector: Vec3.multiply(-1, Quat.getForward(data["RightFoot"]["rotation"])),
 	};
 
-	const hips = !settings.hipsHandle ? {} : {
+	const hips = !settings.lowerBodyHandles || !settings.hipsHandle ? {} : {
 		hipsType: 0,
 		hipsPosition: data["Hips"]["position"],
 		hipsRotation: data["Hips"]["rotation"],
 	};
 
-	const upperBody = HMD.active || !settings.upperBodyHandles ? {} : {
+	const head = HMD.active || !settings.upperBodyHandles || !settings.headHandle ? {} : {
 		headType: 0,
 		headPosition: data["Head"]["position"],
 		headRotation: data["Head"]["rotation"],
+	};
 
+	const chest = HMD.active || !settings.upperBodyHandles || !settings.spine2Handle ? {} : {
 		spine2Type: 0,
 		spine2Position: data["Spine2"]["position"],
 		spine2Rotation: data["Spine2"]["rotation"],
+	};
 
+	const upperBody = HMD.active || !settings.upperBodyHandles ? {} : {
 		leftHandType: 0,
 		leftHandIKPositionVar: "leftHandPosition",
 		leftHandIKRotationVar: "leftHandRotation",
@@ -94,7 +100,7 @@ function LP_AnimHandlerFunc(_dummy) {
 		rightHandPoleVector: Vec3.multiply(-1, Quat.getForward(data["RightHand"]["rotation"])),*/
 	};
 
-	return { ...lowerBody, ...hips, ...upperBody };
+	return { ...lowerBody, ...hips, ...chest, ...upperBody, ...head };
 }
 
 function LP_CreateHandles(jointNames) {
@@ -229,16 +235,28 @@ const actionSet = [
 
 const settingsActions = [
 	{
-		localClickFunc: "bodyPoser.setting.toggleUpperBody",
-		text: settings.upperBodyHandles ? "[X] Upper body" : "[  ] Upper body",
-	},
-	{
 		localClickFunc: "bodyPoser.setting.toggleLowerBody",
 		text: settings.lowerBodyHandles ? "[X] Lower body" : "[  ] Lower body",
+		textColor: [255, 240, 0],
 	},
 	{
 		localClickFunc: "bodyPoser.setting.toggleHips",
 		text: settings.hipsHandle ? "[X] Hips handle" : "[  ] Hips handle",
+	},
+	{
+		localClickFunc: "bodyPoser.setting.toggleUpperBody",
+		text: settings.upperBodyHandles ? "[X] Upper body" : "[  ] Upper body",
+		textColor: HMD.active ? [128, 128, 128] : [255, 240, 0],
+	},
+	{
+		localClickFunc: "bodyPoser.setting.toggleSpine2",
+		text: settings.spine2Handle ? "[X] Chest handle" : "[  ] Chest handle",
+		textColor: HMD.active ? [128, 128, 128] : [255, 255, 255],
+	},
+	{
+		localClickFunc: "bodyPoser.setting.toggleHead",
+		text: settings.headHandle ? "[X] Head handle" : "[  ] Head handle",
+		textColor: HMD.active ? [128, 128, 128] : [255, 255, 255],
 	},
 ];
 
@@ -273,14 +291,23 @@ Messages.messageReceived.connect((channel, msg, senderID, _localOnly) => {
 
 		if (enabled) {
 			let handles = [];
-			if (settings.hipsHandle) {
-				handles.push("Hips");
-			}
 			if (settings.lowerBodyHandles) {
 				handles.push("LeftFoot", "RightFoot");
+
+				if (settings.hipsHandle) {
+					handles.push("Hips");
+				}
 			}
 			if (settings.upperBodyHandles && !HMD.active) {
-				handles.push("Head", "Spine2", "LeftHand", "RightHand");
+				handles.push("LeftHand", "RightHand");
+
+				if (settings.spine2Handle) {
+					handles.push("Spine2");
+				}
+
+				if (settings.headHandle) {
+					handles.push("Head");
+				}
 			}
 
 			LP_CreateHandles(handles);
@@ -308,10 +335,18 @@ Messages.messageReceived.connect((channel, msg, senderID, _localOnly) => {
 		if (data.funcName === "bodyPoser.setting.toggleHips") {
 			settings.hipsHandle = !settings.hipsHandle;
 		}
+		if (data.funcName === "bodyPoser.setting.toggleSpine2") {
+			settings.spine2Handle = !settings.spine2Handle;
+		}
+		if (data.funcName === "bodyPoser.setting.toggleHead") {
+			settings.headHandle = !settings.headHandle;
+		}
 
 		settingsActions[0].text = settings.upperBodyHandles ? "[X] Upper body" : "[  ] Upper body";
 		settingsActions[1].text = settings.lowerBodyHandles ? "[X] Lower body" : "[  ] Lower body";
 		settingsActions[2].text = settings.hipsHandle ? "[X] Hips handle" : "[  ] Hips handle";
+		settingsActions[3].text = settings.spine2Handle ? "[X] Chest handle" : "[  ] Chest handle";
+		settingsActions[4].text = settings.headHandle ? "[X] Head handle" : "[  ] Head handle";
 		ContextMenu.editActionSet("bodyPoser.settings", settingsActions);
 
 		Settings.setValue("Body Poser", settings);
