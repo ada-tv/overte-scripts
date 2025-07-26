@@ -167,6 +167,7 @@ let currentMenuTarget = Uuid.NULL;
 let currentMenuTargetIsAvatar = false;
 let currentMenuInSubmenu = false;
 let currentMenuTargetLine = Uuid.NULL;
+let mouseWasCaptured = false;
 
 function ContextMenu_DeleteMenu() {
 	currentMenuEntities.forEach((_, e) => Entities.deleteEntity(e));
@@ -177,6 +178,7 @@ function ContextMenu_DeleteMenu() {
 	currentMenuTargetIsAvatar = false;
 	currentMenuTarget = Uuid.NULL;
 	currentMenuTargetLine = Uuid.NULL;
+	Camera.captureMouse = mouseWasCaptured;
 }
 
 function ContextMenu_EntityClick(eid, event) {
@@ -235,6 +237,9 @@ function ContextMenu_OpenActions(actionSetName, page = 0) {
 	currentMenuActionFuncs = [];
 
 	currentMenuInSubmenu = true;
+
+	mouseWasCaptured = Camera.captureMouse;
+	Camera.captureMouse = false;
 
 	const scale = MyAvatar.getAvatarScale();
 	const myAvatar = MyAvatar.sessionUUID;
