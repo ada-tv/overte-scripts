@@ -49,9 +49,11 @@ module.exports = {
 	antialiasedText: releaseVersionGreater(2025, 5, 1) || devVersionGeq(2025, 6, 7),
 	chatBubbles: releaseVersionGreater(2025, 5, 1) || devVersionGeq(2025, 6, 23),
 
-	// not merged yet, no minimum version date, likely the version after 2025-07 or 2025-08
-	canvasEntity: builtinScript("canvasCommand.js"),
-
 	// not merged and not a PR yet, will be automatically loaded by contextMenuApi
 	contextMenu: builtinScript("contextMenu.js") || scriptIsRunning("contextMenu.js"),
+
+	// in the protocol_changes branch, likely after 2025-08
+	canvasEntity: builtinScript("canvasCommand.js"),
+	scriptEntity: false,
+	emptyEntity: false,
 };

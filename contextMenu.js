@@ -149,13 +149,13 @@ const targetingPick = [
 	Picks.createPick(PickType.Ray, {
 		enabled: true,
 		filter: Picks.PICK_DOMAIN_ENTITIES | Picks.PICK_AVATAR_ENTITIES | Picks.PICK_LOCAL_ENTITIES | Picks.PICK_INCLUDE_NONCOLLIDABLE | Picks.PICK_AVATARS,
-		maxDistance: 20 * MyAvatar.getAvatarScale(),
+		maxDistance: 20,
 		joint: HMD.active ? "_CAMERA_RELATIVE_CONTROLLER_LEFTHAND" : "Mouse",
 	}),
 	Picks.createPick(PickType.Ray, {
 		enabled: true,
 		filter: Picks.PICK_DOMAIN_ENTITIES | Picks.PICK_AVATAR_ENTITIES | Picks.PICK_LOCAL_ENTITIES | Picks.PICK_INCLUDE_NONCOLLIDABLE | Picks.PICK_AVATARS,
-		maxDistance: 20 * MyAvatar.getAvatarScale(),
+		maxDistance: 20,
 		joint: HMD.active ? "_CAMERA_RELATIVE_CONTROLLER_RIGHTHAND" : "Mouse",
 	}),
 ];

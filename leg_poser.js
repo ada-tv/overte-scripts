@@ -2,7 +2,6 @@ const ContextMenu = Script.require(Script.resolvePath("contextMenuApi.js"));
 const VersionFeatures = Script.require(Script.resolvePath("versionFeatures.js"));
 const QueryOptions = Script.require(Script.resolvePath("queryOptions.js"));
 
-const PUBLIC_HANDLES = Boolean(Number(QueryOptions?.publicHandles ?? 0));
 const USE_GRAB_HACK = !VersionFeatures.grabbableLocalEntities;
 if (USE_GRAB_HACK) {
 	console.warn("Grabbable local entities not supported, using workaround… Other players won't see the handles, but will still be able to grab them!");
@@ -14,6 +13,7 @@ let settings = Settings.getValue("Body Poser", {
 	hipsHandle: true,
 	spine2Handle: true,
 	headHandle: true,
+	public: false,
 });
 let presets = Settings.getValue("Body Poser/Presets", {});
 
@@ -24,6 +24,7 @@ let frozenAnimation = false;
 
 let animHandler;
 const jointHandleEntities = {};
+const jointHandleVisuals = {};
 
 function LP_AnimHandlerFunc(_dummy) {
 	const data = {};
@@ -126,18 +127,18 @@ function LP_CreateHandles(jointNames) {
 			localPosition: MyAvatar.getAbsoluteDefaultJointTranslationInObjectFrame(jointIndex),
 			localDimensions: handleSize,
 			collisionless: true,
-			alpha: (USE_GRAB_HACK && !PUBLIC_HANDLES) ? 0.0 : 0.5,
+			alpha: (USE_GRAB_HACK && !settings.public) ? 0.0 : 0.5,
 			color: color,
 			unlit: true,
 			visible: handlesVisible,
 			grab: {grabbable: handlesVisible},
 			renderLayer: "front",
-		}, (USE_GRAB_HACK || PUBLIC_HANDLES) ? "avatar" : "local");
+		}, (USE_GRAB_HACK || settings.public) ? "avatar" : "local");
 
 		// local entities aren't properly grabbable on 2025.05.1,
 		// so have invisible grabbable avatar entities with local visuals
-		if (USE_GRAB_HACK && !PUBLIC_HANDLES) {
-			Entities.addEntity({
+		if (USE_GRAB_HACK && !settings.public) {
+			jointHandleVisuals[joint] = Entities.addEntity({
 				parentID: jointHandleEntities[joint],
 				type: "Box",
 				name: `Body poser handle visual (${joint})`,
@@ -181,6 +182,11 @@ function LP_DeleteHandles() {
 		Entities.deleteEntity(jointHandleEntities[joint]);
 		delete jointHandleEntities[joint];
 	}
+
+	for (const joint in jointHandleVisuals) {
+		Entities.deleteEntity(jointHandleVisuals[joint]);
+		delete jointHandleVisuals[joint];
+	}
 }
 
 function LP_HideHandles() {
@@ -189,6 +195,10 @@ function LP_HideHandles() {
 	for (const handle of Object.values(jointHandleEntities)) {
 		Entities.editEntity(handle, {visible: false, grab: {grabbable:false}});
 	}
+
+	for (const handle of Object.values(jointHandleVisuals)) {
+		Entities.editEntity(handle, {visible: false});
+	}
 }
 
 function LP_ShowHandles() {
@@ -196,6 +206,10 @@ function LP_ShowHandles() {
 
 	for (const handle of Object.values(jointHandleEntities)) {
 		Entities.editEntity(handle, {visible: true, grab: {grabbable:true}});
+	}
+
+	for (const handle of Object.values(jointHandleVisuals)) {
+		Entities.editEntity(handle, {visible: true});
 	}
 }
 
@@ -233,32 +247,37 @@ const actionSet = [
 	},
 ];
 
-const settingsActions = [
-	{
+const settingsActions = {
+	public: {
+		localClickFunc: "bodyPoser.setting.public",
+		text: settings.public ? "[X] Public handles" : "[  ] Public handles",
+		textColor: [255, 128, 255],
+	},
+	lowerBody: {
 		localClickFunc: "bodyPoser.setting.toggleLowerBody",
 		text: settings.lowerBodyHandles ? "[X] Lower body" : "[  ] Lower body",
 		textColor: [255, 240, 0],
 	},
-	{
+	hips: {
 		localClickFunc: "bodyPoser.setting.toggleHips",
 		text: settings.hipsHandle ? "[X] Hips handle" : "[  ] Hips handle",
 	},
-	{
+	upperBody: {
 		localClickFunc: "bodyPoser.setting.toggleUpperBody",
 		text: settings.upperBodyHandles ? "[X] Upper body" : "[  ] Upper body",
 		textColor: HMD.active ? [128, 128, 128] : [255, 240, 0],
 	},
-	{
+	chest: {
 		localClickFunc: "bodyPoser.setting.toggleSpine2",
 		text: settings.spine2Handle ? "[X] Chest handle" : "[  ] Chest handle",
 		textColor: HMD.active ? [128, 128, 128] : [255, 255, 255],
 	},
-	{
+	head: {
 		localClickFunc: "bodyPoser.setting.toggleHead",
 		text: settings.headHandle ? "[X] Head handle" : "[  ] Head handle",
 		textColor: HMD.active ? [128, 128, 128] : [255, 255, 255],
 	},
-];
+};
 
 ContextMenu.registerActionSet("bodyPoser", [{
 	text: "> Poser",
@@ -326,6 +345,9 @@ Messages.messageReceived.connect((channel, msg, senderID, _localOnly) => {
 	}
 
 	if (data.funcName.startsWith("bodyPoser.setting")) {
+		if (data.funcName === "bodyPoser.setting.public") {
+			settings.public = !settings.public;
+		}
 		if (data.funcName === "bodyPoser.setting.toggleUpperBody") {
 			settings.upperBodyHandles = !settings.upperBodyHandles;
 		}
@@ -342,11 +364,12 @@ Messages.messageReceived.connect((channel, msg, senderID, _localOnly) => {
 			settings.headHandle = !settings.headHandle;
 		}
 
-		settingsActions[0].text = settings.upperBodyHandles ? "[X] Upper body" : "[  ] Upper body";
-		settingsActions[1].text = settings.lowerBodyHandles ? "[X] Lower body" : "[  ] Lower body";
-		settingsActions[2].text = settings.hipsHandle ? "[X] Hips handle" : "[  ] Hips handle";
-		settingsActions[3].text = settings.spine2Handle ? "[X] Chest handle" : "[  ] Chest handle";
-		settingsActions[4].text = settings.headHandle ? "[X] Head handle" : "[  ] Head handle";
+		settingsActions.public.text = settings.public ? "[X] Public handles" : "[  ] Public handles";
+		settingsActions.lowerBody.text = settings.lowerBodyHandles ? "[X] Lower body" : "[  ] Lower body";
+		settingsActions.hips.text = settings.hipsHandle ? "[X] Hips handle" : "[  ] Hips handle";
+		settingsActions.upperBody.text = settings.upperBodyHandles ? "[X] Upper body" : "[  ] Upper body";
+		settingsActions.chest.text = settings.spine2Handle ? "[X] Chest handle" : "[  ] Chest handle";
+		settingsActions.head.text = settings.headHandle ? "[X] Head handle" : "[  ] Head handle";
 		ContextMenu.editActionSet("bodyPoser.settings", settingsActions);
 
 		Settings.setValue("Body Poser", settings);

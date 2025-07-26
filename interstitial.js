@@ -1,6 +1,9 @@
 const SOUND_CLICK = SoundCache.getSound(Script.resourcesPath() + "sounds/Button06.wav");
 const SOUND_HOVER = SoundCache.getSound(Script.resourcesPath() + "sounds/Button04.wav");
 
+const CAMERA_MATRIX_INDEX = 65529;
+const SENSOR_TO_WORLD_MATRIX_INDEX = 65534;
+
 let tickInterval;
 
 let fadeOut = false;
@@ -9,14 +12,10 @@ let alpha = 1.0;
 let hasDescription = false;
 let descriptionAlpha = 1.0;
 
-let bgEntity;
-let bgMaterialEntity;
-let bgGridEntity;
+let bgEntity, bgMaterialEntity;
 let newDomainNameEntity;
 let newDomainDescEntity;
 let newDomainThumbEntity;
-let bgParticlesEntity;
-//let loadingBar;
 let cancelButton, skipButton;
 
 function bgMaterialData(alpha = 0) {
@@ -40,6 +39,7 @@ function interstitialHoverStart(entityID, _event) {
 			backgroundAlpha: 1,
 			backgroundColor: [72, 32, 64],
 			textColor: [255, 255, 255],
+			text: "<<  Go back",
 		});
 	} else if (entityID === skipButton) {
 		Audio.playSystemSound(SOUND_HOVER);
@@ -48,7 +48,7 @@ function interstitialHoverStart(entityID, _event) {
 			backgroundAlpha: 1,
 			backgroundColor: [72, 32, 64],
 			textColor: [255, 255, 255],
-			text: "Skip loading screen >>",
+			text: "Skip  >>",
 		});
 	}
 }
@@ -59,6 +59,7 @@ function interstitialHoverStop(entityID, _event) {
 			backgroundAlpha: 0,
 			backgroundColor: [0, 0, 0],
 			textColor: [240, 240, 240],
+			text: "<<",
 		});
 	} else if (entityID === skipButton) {
 		Entities.editEntity(skipButton, {
@@ -85,8 +86,6 @@ function interstitialUpdate(delta) {
 		alpha = Math.max(0.0, alpha - delta);
 		descriptionAlpha = Math.max(0.0, descriptionAlpha - delta);
 
-		Entities.editEntity(bgGridEntity, {visible: false});
-
 		if (alpha === 0) {
 			deleteInterstitial();
 		}
@@ -96,23 +95,16 @@ function interstitialUpdate(delta) {
 		if (hasDescription) {
 			descriptionAlpha = Math.min(1.0, descriptionAlpha + delta * 2);
 		}
-
-		if (alpha > 0.8) {
-			Entities.editEntity(bgGridEntity, {visible: true});
-		}
 	}
 
 	if (Window.isPhysicsEnabled()) { fadeOut = true; }
 
-	Entities.editEntity(bgMaterialEntity, {materialData: JSON.stringify(bgMaterialData(Math.max(0.0, (alpha - 0.6) * 2.5)))});
+	Entities.editEntity(bgMaterialEntity, {materialData: JSON.stringify(
+		bgMaterialData(Math.max(0.0, (alpha - 0.6) * 2.5) * 0.8)
+	)});
 	Entities.editEntity(newDomainNameEntity, {textAlpha: Math.min(1.0, alpha * 1.3)});
 	Entities.editEntity(newDomainDescEntity, {textAlpha: descriptionAlpha});
 	Entities.editEntity(newDomainThumbEntity, {alpha: descriptionAlpha});
-	/*Entities.editEntity(loadingBar, {
-		dimensions: [fakeLoading * 2, 0.03, 0.03],
-		localPosition: [fakeLoading - 1, 0.25, -2],
-		alpha: alpha,
-	});*/
 	Entities.editEntity(skipButton, {textAlpha: alpha});
 	Entities.editEntity(cancelButton, {textAlpha: alpha});
 }
@@ -158,18 +150,23 @@ function openInterstitial(place_name) {
 		return;
 	}
 
+	const parentJoint = HMD.active ? SENSOR_TO_WORLD_MATRIX_INDEX : CAMERA_MATRIX_INDEX;
+	const jointOffsetY = HMD.active ? 0 : -1.6;
+
+	const extraProps = {
+		renderLayer: "front",
+		isVisibleInSecondaryCamera: false,
+		canCastShadow: false,
+		grab: {grabbable: false},
+	};
+
 	bgEntity = Entities.addEntity({
 		type: "Sphere",
-		//renderLayer: "front",
 		parentID: MyAvatar.sessionUUID,
+		parentJointIndex: parentJoint,
+		dimensions: [20, 20, 20],
 		ignorePickIntersection: true,
-		localPosition: [0, 0, 0],
-		rotation: Quat.cancelOutRollAndPitch(Camera.orientation),
-		dimensions: [30, 30, 30],
-		color: [0, 0, 0],
-		alpha: alpha,
-		unlit: true,
-		grab: {grabbable: false},
+		...extraProps
 	}, "local");
 
 	bgMaterialEntity = Entities.addEntity({
@@ -178,145 +175,96 @@ function openInterstitial(place_name) {
 		parentID: bgEntity,
 		materialURL: "materialData",
 		priority: 1,
-		materialData: JSON.stringify(bgMaterialData(alpha)),
-		grab: {grabbable: false},
-	}, "local");
-
-	bgGridEntity = Entities.addEntity({
-		type: "Grid",
-		//renderLayer: "front",
-		parentID: bgEntity,
-		ignorePickIntersection: true,
-		localPosition: [0, -MyAvatar.userHeight / 2, 0],
-		localRotation: Quat.fromPitchYawRollDegrees(90, 0, 0),
-		dimensions: [30, 30, 1],
-		//color: "#472e82",
-		color: "#2e214f",
-		followCamera: false,
-		visible: false,
-		grab: {grabbable: false},
+		materialData: JSON.stringify(bgMaterialData(0.0)),
+		...extraProps
 	}, "local");
 
 	newDomainNameEntity = Entities.addEntity({
 		type: "Text",
-		parentID: bgEntity,
+		parentID: MyAvatar.sessionUUID,
+		parentJointIndex: parentJoint,
 		ignorePickIntersection: true,
 		text: place_name,
-		localPosition: [0, 0.4, -2],
+		localPosition: [0, jointOffsetY + 1.4, -2],
 		dimensions: [2.5, 0.2, 0.1],
 		lineHeight: 0.2,
-		//renderLayer: "front",
 		backgroundAlpha: 0,
 		textAlpha: alpha,
 		unlit: true,
 		alignment: "center",
 		verticalAlignment: "top",
-		grab: {grabbable: false},
+		textEffect: "outline fill",
+		textEffectColor: [0, 0, 0],
+		textEffectThickness: 0.4,
+		...extraProps
 	}, "local");
 
 	newDomainDescEntity = Entities.addEntity({
 		type: "Text",
-		parentID: bgEntity,
+		parentID: MyAvatar.sessionUUID,
+		parentJointIndex: parentJoint,
 		ignorePickIntersection: true,
 		text: "",
-		localPosition: [0, -0.1, -2],
+		localPosition: [0, jointOffsetY + 0.9, -2],
 		dimensions: [2, 0.5, 0.1],
 		lineHeight: 0.1,
-		//renderLayer: "front",
 		backgroundAlpha: 0,
 		textAlpha: alpha,
 		unlit: true,
 		alignment: "center",
 		verticalAlignment: "top",
-		grab: {grabbable: false},
+		textEffect: "outline fill",
+		textEffectColor: [0, 0, 0],
+		textEffectThickness: 0.4,
+		...extraProps
 	}, "local");
 
 	newDomainThumbEntity = Entities.addEntity({
 		type: "Image",
-		parentID: bgEntity,
+		parentID: MyAvatar.sessionUUID,
+		parentJointIndex: parentJoint,
 		ignorePickIntersection: true,
-		//renderLayer: "front",
 		imageURL: "",
 		dimensions: [2, 1, 0.1],
-		localPosition: [0, 1, -2],
+		localPosition: [0, jointOffsetY + 2, -2],
 		emissive: true,
 		alpha: alpha,
-		grab: {grabbable: false},
+		...extraProps
 	}, "local");
-
-	bgParticlesEntity = Entities.addEntity({
-		type: "ParticleEffect",
-		parentID: bgEntity,
-		ignorePickIntersection: true,
-		localPosition: [0, 0, 5],
-		textures: "https://content.overte.org/Bazaar/Assets/Textures/Defaults/Interface/default_particle.png",
-		//renderLayer: "front",
-		lifespan: 10,
-		maxParticles: 50,
-		emitRate: 15,
-		shapeType: "circle",
-		emitDimensions: [15, 15, 15],
-		emitRadiusStart: 1,
-		particleRadius: [0, 3, 2],
-		alphaStart: 0.25,
-		alpha: 0.0,
-		alphaFinish: 0.0,
-		colorStart: "#751f8f",
-		color: "#751f8f",
-		colorFinish: "#751f8f",
-		spinSpread: 100,
-		emitAcceleration: [0, 0, 0],
-		accelerationSpread: [0.1, 0.1, 0.1],
-		radiusStart: 0,
-		radiusStart: 0,
-		particleRadius: 2,
-		radiusFinish: 2,
-		grab: {grabbable: false},
-	}, "local");
-
-	/*loadingBar = Entities.addEntity({
-		type: "Box",
-		parentID: bgEntity,
-		ignorePickIntersection: true,
-		//renderLayer: "front",
-		dimensions: [2, 0.03, 0.03],
-		localPosition: [0, 0.25, -2],
-		unlit: true,
-		color: [64, 255, 32],
-		alpha: alpha,
-		grab: {grabbable: false},
-	}, "local");*/
 
 	cancelButton = Entities.addEntity({
 		type: "Text",
-		parentID: bgEntity,
+		parentID: MyAvatar.sessionUUID,
+		parentJointIndex: parentJoint,
 		ignorePickIntersection: false,
-		text: "<  Go back",
-		localPosition: [-1.5, 0.3, -2],
-		localRotation: Quat.fromPitchYawRollDegrees(0, 30, 0),
-		dimensions: [0.5, 0.15, 0.1],
-		lineHeight: 0.1,
-		//renderLayer: "front",
+		text: "<<",
+		localPosition: [-0.5, jointOffsetY + 2.6, -2],
+		dimensions: [1, 0.1, 0.1],
+		lineHeight: 0.08,
 		textAlpha: alpha,
 		unlit: true,
-		alignment: "center",
-		verticalAlignment: "center",
+		alignment: "left",
+		verticalAlignment: "top",
 		backgroundAlpha: 0,
 		backgroundColor: [0, 0, 0],
 		textColor: [240, 240, 240],
-		bottomMargin: 0.015,
-		grab: {grabbable: false},
+		leftMargin: 0.03,
+		topMargin: 0.01,
+		textEffect: "outline fill",
+		textEffectColor: [0, 0, 0],
+		textEffectThickness: 0.4,
+		...extraProps
 	}, "local");
 
 	skipButton = Entities.addEntity({
 		type: "Text",
-		parentID: bgEntity,
+		parentID: MyAvatar.sessionUUID,
+		parentJointIndex: parentJoint,
 		ignorePickIntersection: false,
 		text: ">>",
-		localPosition: [0.5, 1.5, -2],
+		localPosition: [0.5, jointOffsetY + 2.6, -2],
 		dimensions: [1, 0.1, 0.1],
 		lineHeight: 0.08,
-		//renderLayer: "front",
 		textAlpha: alpha,
 		unlit: true,
 		alignment: "right",
@@ -324,12 +272,14 @@ function openInterstitial(place_name) {
 		backgroundAlpha: 0,
 		backgroundColor: [0, 0, 0],
 		textColor: [240, 240, 240],
-		rightMargin: 0.02,
+		rightMargin: 0.03,
 		topMargin: 0.01,
-		grab: {grabbable: false},
+		textEffect: "outline fill",
+		textEffectColor: [0, 0, 0],
+		textEffectThickness: 0.4,
+		...extraProps
 	}, "local");
 
-	//Script.update.connect(interstitialUpdate);
 	tickInterval = Script.setInterval(() => interstitialUpdate(1 / 30), 1000 / 30);
 
 	Entities.hoverEnterEntity.connect(interstitialHoverStart);
@@ -340,7 +290,6 @@ function openInterstitial(place_name) {
 }
 
 function deleteInterstitial() {
-	//Script.update.disconnect(interstitialUpdate);
 	if (tickInterval) {
 		Script.clearInterval(tickInterval);
 		tickInterval = undefined;
@@ -353,10 +302,8 @@ function deleteInterstitial() {
 	Entities.deleteEntity(bgEntity);
 	Entities.deleteEntity(bgMaterialEntity);
 	Entities.deleteEntity(newDomainNameEntity);
-	Entities.deleteEntity(bgGridEntity);
-	Entities.deleteEntity(bgParticlesEntity);
+	Entities.deleteEntity(newDomainDescEntity);
 	Entities.deleteEntity(newDomainThumbEntity);
-	//Entities.deleteEntity(loadingBar);
 	Entities.deleteEntity(cancelButton);
 	Entities.deleteEntity(skipButton);
 
@@ -404,3 +351,13 @@ Script.scriptEnding.connect(() => {
 	deleteInterstitial();
 	Script.clearInterval(checkerInterval);
 });
+
+/*{
+	Script.clearInterval(checkerInterval);
+
+	openInterstitial("overte_hub");
+
+	Script.setTimeout(() => {
+		fadeOut = true;
+	}, 15 * 1000);
+}*/
