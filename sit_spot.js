@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: CC0-1.0
 (function() {
+	"use strict";
 	const MSG_CHANNEL = "net.thingvellir.sit_spot";
 	const EDIT_SETTING = "io.highfidelity.isEditing"; // true if the create app is open
 
@@ -11,7 +12,7 @@
 	let selfID;
 
 	try {
-		this.actionEvent = (actionID, value) => {
+		this.actionEvent = function(actionID, value) {
 			if (disabled || !isSitting || actionID != actionTranslateY) { return; }
 
 			if (value > 0.5) {
@@ -22,7 +23,7 @@
 			}
 		}
 
-		this.preload = _selfID => {
+		this.preload = function(_selfID) {
 			selfID = _selfID;
 
 			Controller.actionEvent.connect(this.actionEvent);
@@ -44,7 +45,7 @@
 			}, "local");
 		};
 
-		this.mousePressOnEntity = (entityID, event) => {
+		this.mousePressOnEntity = function(entityID, event) {
 			if (
 				disabled ||
 				entityID !== selfID ||
@@ -61,7 +62,7 @@
 			isSitting = true;
 		};
 
-		this.messageRecv = (channel, message, senderID, localOnly) => {
+		this.messageRecv = function(channel, message, senderID, localOnly) {
 			if (channel !== MSG_CHANNEL || !localOnly || senderID != MyAvatar.sessionUUID) { return; }
 
 			try {
@@ -77,19 +78,17 @@
 			}
 		};
 
-		Messages.messageReceived.connect(this.messageRecv);
-
-		this.unload = _selfID => {
+		this.unload = function(_selfID) {
 			Messages.messageReceived.disconnect(this.messageRecv);
 			Controller.actionEvent.disconnect(this.actionEvent);
 			Entities.deleteEntity(visualID);
-			delete visualID;
 			if (isSitting) {
 				MyAvatar.endSit(MyAvatar.position, MyAvatar.orientation);
 			}
 		};
 
-		Window.domainChanged.connect(() => { this.unload(); });
+		Messages.messageReceived.connect(() => this.messageRecv());
+		Window.domainChanged.connect(() => this.unload());
 	} catch(e) {
 		// put a tag on the message, the game just reports about:Entity
 		console.error(`[sit_spot.js] ${e}`);
