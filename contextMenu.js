@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: CC0-1.0
-
+"use strict";
 const CONTEXT_MENU_SETTINGS = Settings.getValue("Context Menu");
 
 const ACTIONS_PER_PAGE = CONTEXT_MENU_SETTINGS["actionsPerPage"] ?? 6;

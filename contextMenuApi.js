@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: CC0-1.0
+"use strict";
 
 // start the context menu if it's not installed yet,
 // makes life a little easier for new users
@@ -117,7 +118,7 @@ module.exports = {
 	 * Registers a new action set for the context menu.
 	 * @param {string} name - The name of the action set
 	 * @param {(Object|Object[])} actions - The action information
-	 * @param {string} [parent] - The parent of the action set. Built-in sets are "_ROOT", "_SELF", "_OBJECT", and "_AVATAR". If no parent is set, the action set will only be accessible through another action's "submenu" property.
+	 * @param {string} [parent] - The parent of the action set. If no parent is set, the action set will only be accessible through another action's "submenu" property. See @link{ROOT_SET}, @link{SELF_SET}, @link{OBJECT_SET}, and @link{AVATAR_SET}.
 	 * @param {string} [title] - The name of this action set, if used as a submenu.
 	 * @param {string} [desc] - The description of this action set, if used as a submenu.
 	 */
