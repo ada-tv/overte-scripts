@@ -78,9 +78,9 @@ const OBJECT_ACTIONS = [
 	},
 	ent => {
 		if (Entities.getNestableType(ent) !== "entity") { return; }
-		const locked = Entities.getEntityProperties(ent, "locked").locked;
+		const {locked, cloneOriginID} = Entities.getEntityProperties(ent, ["locked", "cloneOriginID"]);
 
-		if (locked || !Entities.canAdjustLocks()) { return; }
+		if (locked || !cloneOriginID || !Entities.canAdjustLocks()) { return; }
 
 		return {
 			text: "Delete",
@@ -126,7 +126,7 @@ const ROOT_ACTIONS = [
 		if (!avatar || Object.keys(avatar).length === 0) { return; }
 
 		return {
-			text: avatar.displayName,
+			text: avatar.displayName || "unnamed",
 			textColor: [255, 255, 0],
 			keepMenuOpen: true,
 			submenu: "_AVATAR",

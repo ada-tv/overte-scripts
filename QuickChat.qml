@@ -36,7 +36,6 @@ RowLayout {
 		placeholderText: "Quick chat message…"
 		placeholderTextColor: quickChat.darkMode ? "#606060" : "#808080";
 		color: quickChat.darkMode ? "white" : "black";
-		focus: true
 
 		font.pixelSize: 20
 
@@ -54,6 +53,10 @@ RowLayout {
 			} else {
 				toScript({ action: "start_typing" });
 			}
+		}
+
+		onPressed: {
+			KeyboardScriptingInterface.raised = true;
 		}
 
 		Keys.onPressed: {

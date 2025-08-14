@@ -42,6 +42,7 @@ function webEventHandler(msg_raw) {
 			Entities.keyboardFocusEntity = null;
 			guiEntity = undefined;
 			guiEntityObject = undefined;
+			Keyboard.raised = false;
 			break;
 
 		case "send":
@@ -57,20 +58,19 @@ function webEventHandler(msg_raw) {
 			Entities.keyboardFocusEntity = null;
 			guiEntity = undefined;
 			guiEntityObject = undefined;
+			Keyboard.raised = false;
 			break;
 	}
 }
 
 function spawnQuickChat() {
-	const pos = Vec3.sum(Camera.position, Vec3.multiplyQbyV(Camera.orientation, [0, 0, -1]));
+	const pos = Vec3.sum(Camera.position, Vec3.multiplyQbyV(Camera.orientation, [0, -0.2, -1]));
 
 	guiEntity = Entities.addEntity({
 		position: pos,
-		rotation: Camera.orientation,
+		rotation: Quat.cancelOutRollAndPitch(Camera.orientation),
 		...defaultProperties,
 	}, "local");
-
-	Entities.keyboardFocusEntity = guiEntity;
 
 	Script.setTimeout(() => {
 		guiEntityObject = Entities.getEntityObject(guiEntity)
@@ -105,4 +105,5 @@ ContextMenu.registerActionSet("quickChat", [{
 Script.scriptEnding.connect(() => {
 	Entities.deleteEntity(guiEntity);
 	ContextMenu.unregisterActionSet("quickChat");
+	Keyboard.raised = false;
 });
