@@ -1,0 +1,392 @@
+{
+    "DataVersion": 0,
+    "Entities": [
+        {
+            "angularDamping": 0,
+            "damping": 0,
+            "dimensions": {
+                "x": 1,
+                "y": 1,
+                "z": 1
+            },
+            "grab": {
+                "grabbable": false
+            },
+            "id": "{9920aba7-23ef-40df-9b71-0741d3d09ffd}",
+            "materialData": "{\"materialVersion\":1,\"materials\":[{\"model\":\"hifi_pbr\",\"albedo\":[1,1,1],\"albedoMap\":\"file:///home/ada/src/overte-scripts/assets/gray_checker.png\",\"metallic\":0.001,\"roughness\":0.9,\"opacity\":1,\"emissive\":[0,0,0],\"scattering\":0,\"cullFaceMode\":\"CULL_BACK\"}]}",
+            "materialMappingMode": "projected",
+            "materialURL": "materialData",
+            "name": "Floor Material (3)",
+            "parentID": "{222aa907-b4da-40f6-81f7-d7eef31ca563}",
+            "position": {
+                "x": 0,
+                "y": -1,
+                "z": 0
+            },
+            "priority": 1,
+            "rotation": {
+                "w": 0.7071068286895752,
+                "x": 0.7071068286895752,
+                "y": 0,
+                "z": 0
+            },
+            "type": "Material"
+        },
+        {
+            "angularDamping": 0,
+            "color": {
+                "blue": 239,
+                "green": 180,
+                "red": 0
+            },
+            "damping": 0,
+            "dimensions": {
+                "x": 10,
+                "y": 2,
+                "z": 10
+            },
+            "grab": {
+                "grabbable": false
+            },
+            "id": "{091781dd-65c3-4364-be71-d48b2f4fba31}",
+            "name": "Base Floor",
+            "registrationPoint": {
+                "x": 0.5,
+                "y": 1,
+                "z": 0.5
+            },
+            "shape": "Cube",
+            "type": "Box"
+        },
+        {
+            "ambientLight": {
+                "ambientIntensity": 1,
+                "ambientURL": "file:///home/ada/src/overte-scripts/assets/sky_graybox.png"
+            },
+            "ambientLightMode": "enabled",
+            "dimensions": {
+                "x": 1000,
+                "y": 1000,
+                "z": 1000
+            },
+            "grab": {
+                "grabbable": false
+            },
+            "id": "{7a93d0b0-9ee8-4e1d-bb52-eb2b6f292daf}",
+            "keyLight": {
+                "castShadows": true,
+                "direction": {
+                    "x": 0,
+                    "y": -0.7071067690849304,
+                    "z": 0.7071067690849304
+                },
+                "shadowBias": 0.3
+            },
+            "keyLightMode": "enabled",
+            "name": "Sky",
+            "shapeType": "box",
+            "skybox": {
+                "color": {
+                    "blue": 191,
+                    "green": 191,
+                    "red": 191
+                },
+                "url": "file:///home/ada/src/overte-scripts/assets/sky_graybox.png"
+            },
+            "skyboxMode": "enabled",
+            "type": "Zone"
+        },
+        {
+            "angularDamping": 0,
+            "color": {
+                "blue": 0,
+                "green": 255,
+                "red": 0
+            },
+            "damping": 0,
+            "dimensions": {
+                "x": 0.10000000149011612,
+                "y": 1,
+                "z": 0.10000000149011612
+            },
+            "grab": {
+                "grabbable": false
+            },
+            "id": "{afca3248-53a1-45dd-b5a9-9d9108546fbc}",
+            "name": "Axis Y",
+            "position": {
+                "x": -3,
+                "y": 1,
+                "z": -3
+            },
+            "registrationPoint": {
+                "x": 0.5,
+                "y": 0,
+                "z": 0.5
+            },
+            "shape": "Cube",
+            "type": "Box"
+        },
+        {
+            "angularDamping": 0,
+            "canCastShadow": false,
+            "damping": 0,
+            "dimensions": {
+                "x": 2.0999999046325684,
+                "y": 3.0999999046325684,
+                "z": 0.05000000074505806
+            },
+            "grab": {
+                "grabbable": false
+            },
+            "id": "{a02e9e54-9d5b-4166-8c88-7aa0bf1e55d6}",
+            "name": "Mirror Frame",
+            "position": {
+                "x": 0.800000011920929,
+                "y": 0,
+                "z": -2
+            },
+            "registrationPoint": {
+                "x": 0.5,
+                "y": 0,
+                "z": 1
+            },
+            "rotation": {
+                "w": 0.9807852506637573,
+                "x": 0,
+                "y": -0.19509032368659973,
+                "z": 0
+            },
+            "shape": "Cube",
+            "type": "Box"
+        },
+        {
+            "angularDamping": 0,
+            "canCastShadow": false,
+            "damping": 0,
+            "dimensions": {
+                "x": 2,
+                "y": 3,
+                "z": 0.05000000074505806
+            },
+            "grab": {
+                "grabbable": false
+            },
+            "id": "{632bb9e6-8ee6-47ea-80bb-ecad14eccf61}",
+            "mirrorMode": "mirror",
+            "name": "Mirror",
+            "parentID": "{a02e9e54-9d5b-4166-8c88-7aa0bf1e55d6}",
+            "position": {
+                "x": -5.960464477539063e-08,
+                "y": 0,
+                "z": 2.384185791015625e-07
+            },
+            "registrationPoint": {
+                "x": 0.5,
+                "y": 0,
+                "z": 0.8999999761581421
+            },
+            "shape": "Cube",
+            "type": "Box"
+        },
+        {
+            "angularDamping": 0,
+            "damping": 0,
+            "dimensions": {
+                "x": 1,
+                "y": 1,
+                "z": 1
+            },
+            "grab": {
+                "grabbable": false
+            },
+            "id": "{5a674a1e-882b-4112-853f-bb2cc4c5f94d}",
+            "materialData": "{\"materialVersion\":1,\"materials\":[{\"model\":\"hifi_pbr\",\"albedo\":[1,1,1],\"albedoMap\":\"file:///home/ada/src/overte-scripts/assets/gray_checker.png\",\"metallic\":0.001,\"roughness\":0.9,\"opacity\":1,\"emissive\":[0,0,0],\"scattering\":0,\"cullFaceMode\":\"CULL_BACK\"}]}",
+            "materialMappingMode": "projected",
+            "materialURL": "materialData",
+            "name": "Floor Material (2)",
+            "parentID": "{f2706598-4443-448d-8dc9-f79fd54e18dd}",
+            "position": {
+                "x": 0,
+                "y": -1,
+                "z": 0
+            },
+            "priority": 1,
+            "rotation": {
+                "w": 0.7071067690849304,
+                "x": 0.7071067690849304,
+                "y": 0,
+                "z": 0
+            },
+            "type": "Material"
+        },
+        {
+            "angularDamping": 0,
+            "color": {
+                "blue": 239,
+                "green": 180,
+                "red": 0
+            },
+            "damping": 0,
+            "dimensions": {
+                "x": 10,
+                "y": 2,
+                "z": 10
+            },
+            "grab": {
+                "grabbable": false
+            },
+            "id": "{222aa907-b4da-40f6-81f7-d7eef31ca563}",
+            "name": "Floor (3)",
+            "parentID": "{091781dd-65c3-4364-be71-d48b2f4fba31}",
+            "position": {
+                "x": -8,
+                "y": 1,
+                "z": 0
+            },
+            "registrationPoint": {
+                "x": 1,
+                "y": 1,
+                "z": 0.5
+            },
+            "shape": "Cube",
+            "type": "Box"
+        },
+        {
+            "angularDamping": 0,
+            "color": {
+                "blue": 239,
+                "green": 180,
+                "red": 0
+            },
+            "damping": 0,
+            "dimensions": {
+                "x": 3.1610000133514404,
+                "y": 2,
+                "z": 4
+            },
+            "grab": {
+                "grabbable": false
+            },
+            "id": "{f2706598-4443-448d-8dc9-f79fd54e18dd}",
+            "name": "Floor (2)",
+            "parentID": "{091781dd-65c3-4364-be71-d48b2f4fba31}",
+            "position": {
+                "x": -5,
+                "y": 0,
+                "z": 0
+            },
+            "registrationPoint": {
+                "x": 1,
+                "y": 1,
+                "z": 0.5
+            },
+            "rotation": {
+                "w": 0.9869964122772217,
+                "x": 0,
+                "y": 0,
+                "z": -0.16074258089065552
+            },
+            "shape": "Cube",
+            "type": "Box"
+        },
+        {
+            "angularDamping": 0,
+            "damping": 0,
+            "dimensions": {
+                "x": 1,
+                "y": 1,
+                "z": 1
+            },
+            "grab": {
+                "grabbable": false
+            },
+            "id": "{5f8f9e43-cbec-4d82-80a3-1edbc3033046}",
+            "materialData": "{\"materialVersion\":1,\"materials\":[{\"model\":\"hifi_pbr\",\"albedo\":[1,1,1],\"albedoMap\":\"file:///home/ada/src/overte-scripts/assets/gray_checker.png\",\"metallic\":0.001,\"roughness\":0.9,\"opacity\":1,\"emissive\":[0,0,0],\"scattering\":0,\"cullFaceMode\":\"CULL_BACK\"}]}",
+            "materialMappingMode": "projected",
+            "materialURL": "materialData",
+            "name": "Floor Material",
+            "parentID": "{091781dd-65c3-4364-be71-d48b2f4fba31}",
+            "position": {
+                "x": 0,
+                "y": -1,
+                "z": 0
+            },
+            "priority": 1,
+            "rotation": {
+                "w": 0.7071067690849304,
+                "x": 0.7071067690849304,
+                "y": 0,
+                "z": 0
+            },
+            "type": "Material"
+        },
+        {
+            "angularDamping": 0,
+            "color": {
+                "blue": 255,
+                "green": 0,
+                "red": 0
+            },
+            "damping": 0,
+            "dimensions": {
+                "x": 0.10000000149011612,
+                "y": 0.10000000149011612,
+                "z": 1
+            },
+            "grab": {
+                "grabbable": false
+            },
+            "id": "{dc3e207e-8398-4810-ac29-2cd112fe9a57}",
+            "name": "Axis Z",
+            "position": {
+                "x": -3,
+                "y": 1,
+                "z": -3
+            },
+            "registrationPoint": {
+                "x": 0.5,
+                "y": 0.5,
+                "z": 0
+            },
+            "shape": "Cube",
+            "type": "Box"
+        },
+        {
+            "angularDamping": 0,
+            "color": {
+                "blue": 0,
+                "green": 0,
+                "red": 255
+            },
+            "damping": 0,
+            "dimensions": {
+                "x": 1,
+                "y": 0.10000000149011612,
+                "z": 0.10000000149011612
+            },
+            "grab": {
+                "grabbable": false
+            },
+            "id": "{724a87ae-9a05-4bad-98ea-da4a1eaffc27}",
+            "name": "Axis X",
+            "position": {
+                "x": -3,
+                "y": 1,
+                "z": -3
+            },
+            "registrationPoint": {
+                "x": 0,
+                "y": 0.5,
+                "z": 0.5
+            },
+            "shape": "Cube",
+            "type": "Box"
+        }
+    ],
+    "Id": "8555f4ca-652e-455e-89c9-05116bd0e43a",
+    "Paths": {
+        "/": "/0,0,0/0,0,0,1"
+    },
+    "Version": 147
+}
