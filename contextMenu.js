@@ -241,8 +241,11 @@ function ContextMenu_OpenActions(actionSetName, page = 0) {
 	mouseWasCaptured = Camera.captureMouse;
 	Camera.captureMouse = false;
 
-	const scale = MyAvatar.getAvatarScale();
+	const scale = MyAvatar.sensorToWorldScale;
 	const myAvatar = MyAvatar.sessionUUID;
+
+	// https://github.com/overte-org/overte/issues/1668
+	const sensorScaleHack = HMD.active;
 
 	const baseActions = registeredActionSets[actionSetName];
 
@@ -305,7 +308,8 @@ function ContextMenu_OpenActions(actionSetName, page = 0) {
 	let yPos = Math.max(1, activeActions.length) * 0.02 * scale;
 	let bgHeight = (yPos / 2.0) - (0.03 * scale);
 
-	if (!Uuid.isNull(currentMenuTarget)) {
+	// FIXME: Highlight laser doesn't work on camera or sensor-matrix joint
+	/*if (!Uuid.isNull(currentMenuTarget)) {
 		let targetPos;
 		if (currentMenuTargetIsAvatar) {
 			targetPos = AvatarList.getAvatar(currentMenuTarget).position;
@@ -333,7 +337,7 @@ function ContextMenu_OpenActions(actionSetName, page = 0) {
 			glow: true,
 		}, (CONTEXT_MENU_SETTINGS.public ?? false) ? "avatar" : "local");
 		currentMenuEntities.add(currentMenuTargetLine);
-	}
+	}*/
 
 	let titleText;
 	let descriptionText;
@@ -575,6 +579,17 @@ function ContextMenu_OpenActions(actionSetName, page = 0) {
 		a.canCastShadow = false;
 		a.isVisibleInSecondaryCamera = false;
 		a.renderLayer = "front";
+
+		if (sensorScaleHack) {
+			a.dimensions[0] /= MyAvatar.sensorToWorldScale;
+			a.dimensions[1] /= MyAvatar.sensorToWorldScale;
+
+			if (a.rightMargin === undefined) { a.rightMargin = 0; }
+			if (a.bottomMargin === undefined) { a.bottomMargin = 0; }
+			a.rightMargin += a.dimensions[0] * -(MyAvatar.sensorToWorldScale - 1);
+			a.bottomMargin += a.dimensions[1] * -(MyAvatar.sensorToWorldScale - 1);
+		}
+
 		const e = Entities.addEntity(a, (CONTEXT_MENU_SETTINGS.public ?? false) ? "avatar" : "local");
 		currentMenuEntities.add(e);
 	}
@@ -674,7 +689,8 @@ function ContextMenu_ActionEvent(action, value) {
 	}
 }
 
-function ContextMenu_Update() {
+// FIXME: Highlight laser doesn't work on camera or sensor-matrix joint
+/*function ContextMenu_Update() {
 	if (!Uuid.isNull(currentMenuTargetLine)) {
 		if (currentMenuTargetIsAvatar) {
 			targetPos = AvatarList.getAvatar(currentMenuTarget).position;
@@ -692,7 +708,7 @@ function ContextMenu_Update() {
 			rotation: Quat.IDENTITY,
 		});
 	}
-}
+}*/
 
 function ContextMenu_Message(channel, msg, senderID, localOnly) {
 	if (channel !== ACTIONS_CHANNEL) { return; }
@@ -732,7 +748,7 @@ Controller.mousePressEvent.connect(ContextMenu_MousePressEvent);
 Controller.mouseReleaseEvent.connect(ContextMenu_MouseReleaseEvent);
 Entities.mousePressOnEntity.connect(ContextMenu_EntityClick);
 Entities.hoverEnterEntity.connect(ContextMenu_EntityHover);
-Script.update.connect(ContextMenu_Update);
+//Script.update.connect(ContextMenu_Update);
 
 for (const pick of targetingPick) {
 	Picks.setIgnoreItems(pick, [MyAvatar.sessionUUID]);
@@ -754,7 +770,7 @@ Script.scriptEnding.connect(() => {
 	Controller.mouseReleaseEvent.disconnect(ContextMenu_MouseReleaseEvent);
 	Entities.mousePressOnEntity.disconnect(ContextMenu_EntityClick);
 	Entities.hoverEnterEntity.disconnect(ContextMenu_EntityHover);
-	Script.update.disconnect(ContextMenu_Update);
+	//Script.update.disconnect(ContextMenu_Update);
 	Picks.removePick(targetingPick[0]);
 	Picks.removePick(targetingPick[1]);
 	ContextMenu_DeleteMenu();
