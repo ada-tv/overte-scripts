@@ -4,7 +4,12 @@ const DEBUG = false;
 const msgChannel = "AvatarGrab";
 const leave_action = Controller.findAction("TranslateY");
 
-const ContextMenu = Script.require(Script.resolvePath("contextMenuApi.js"));
+const VersionFeatures = Script.require(Script.resolvePath("versionFeatures.js"));
+const ContextMenu = Script.require(
+	VersionFeatures.contextMenu ?
+		"contextMenu" :
+		Script.resolvePath("contextMenuApi.js")
+);
 
 let grabActiveEnabled = true, grabTargetEnabled = true;
 let footGrabEnabled = false, headGrabEnabled = false;
@@ -208,7 +213,7 @@ function S_GrabSend(joint = "RightHand") {
 		grabberID: MyAvatar.sessionUUID,
 		jointName: joint,
 		origin: handOrigin,
-		radius: 0.3 * MyAvatar.scale,
+		radius: 0.3 * MyAvatar.sensorToWorldScale,
 	};
 	Messages.sendMessage(msgChannel, JSON.stringify(data));
 }

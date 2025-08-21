@@ -1,5 +1,10 @@
 // SPDX-License-Identifier: CC0-1.0
-const ContextMenu = Script.require(Script.resolvePath("contextMenuApi.js"));
+const VersionFeatures = Script.require(Script.resolvePath("versionFeatures.js"));
+const ContextMenu = Script.require(
+	VersionFeatures.contextMenu ?
+		"contextMenu" :
+		Script.resolvePath("contextMenuApi.js")
+);
 
 const actionSet = [
 	{

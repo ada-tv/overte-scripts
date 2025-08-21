@@ -1,5 +1,11 @@
 "use strict";
-const ContextMenu = Script.require(Script.resolvePath("contextMenuApi.js"));
+const VersionFeatures = Script.require(Script.resolvePath("versionFeatures.js"));
+const ContextMenu = Script.require(
+	VersionFeatures.contextMenu ?
+		"contextMenu" :
+		Script.resolvePath("contextMenuApi.js")
+);
+
 const defaultProperties = {
 	type: "Web",
 	dimensions: [1.2, 0.1, 0],

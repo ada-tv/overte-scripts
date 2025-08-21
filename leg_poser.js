@@ -1,6 +1,10 @@
-const ContextMenu = Script.require(Script.resolvePath("contextMenuApi.js"));
-const VersionFeatures = Script.require(Script.resolvePath("versionFeatures.js"));
 const QueryOptions = Script.require(Script.resolvePath("queryOptions.js"));
+const VersionFeatures = Script.require(Script.resolvePath("versionFeatures.js"));
+const ContextMenu = Script.require(
+	VersionFeatures.contextMenu ?
+		"contextMenu" :
+		Script.resolvePath("contextMenuApi.js")
+);
 
 const USE_GRAB_HACK = !VersionFeatures.grabbableLocalEntities;
 if (USE_GRAB_HACK) {

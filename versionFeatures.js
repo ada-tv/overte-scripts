@@ -17,7 +17,7 @@ function devVersionGeq(year, month, day) {
 }
 
 // release versions have the year, month, and patch versions
-function releaseVersionGreater(year, month, patch) {
+function releaseVersionGreater(year, month, _patch) {
 	if (VERSION_PARTS[1] !== null) { return false; }
 	if (year >= Number(VERSION_PARTS[2])) { return true; }
 	if (month >= Number(VERSION_PARTS[3])) { return true; }
@@ -49,8 +49,8 @@ module.exports = {
 	antialiasedText: releaseVersionGreater(2025, 5, 1) || devVersionGeq(2025, 6, 7),
 	chatBubbles: releaseVersionGreater(2025, 5, 1) || devVersionGeq(2025, 6, 23),
 
-	// not merged and not a PR yet, will be automatically loaded by contextMenuApi
-	contextMenu: builtinScript("contextMenu.js") || scriptIsRunning("contextMenu.js"),
+	// likely to be merged in 2025-08
+	contextMenu: builtinScript("contextMenu.js"),
 
 	// in the protocol_changes branch, likely after 2025-08
 	canvasEntity: builtinScript("canvasCommand.js"),
