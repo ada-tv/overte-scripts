@@ -272,18 +272,18 @@ function S_InputEvent(action, value) {
 			rightGrabAlreadySent = true;
 			rightReleaseAlreadySent = false;
 
-			if (headGrabEnabled || grabbedWithHead) {
-				S_ReleaseSend("Head");
-				grabbedWithHead = false;
+			if (headGrabEnabled) {
+				S_GrabSend("Head");
+				grabbedWithHead = true;
 			}
 		} else if (value < 0.2 && !rightReleaseAlreadySent) {
 			S_ReleaseSend("RightHand");
 			rightGrabAlreadySent = false;
 			rightReleaseAlreadySent = true;
 
-			if (headGrabEnabled) {
-				S_GrabSend("Head");
-				grabbedWithHead = true;
+			if (headGrabEnabled || grabbedWithHead) {
+				S_ReleaseSend("Head");
+				grabbedWithHead = false;
 			}
 		}
 		return;
