@@ -42,7 +42,7 @@ Messages.messageReceived.connect((channel, msg, senderID, _localOnly) => {
 
 	const data = JSON.parse(msg);
 
-	if (data.funcName === "violence.toggle") {
+	if (data.func === "violence.toggle") {
 		if (enabled) {
 			for (const entity of colliderEntities) {
 				Entities.deleteEntity(entity);

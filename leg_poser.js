@@ -301,7 +301,7 @@ Messages.messageReceived.connect((channel, msg, senderID, _localOnly) => {
 
 	const data = JSON.parse(msg);
 
-	if (data.funcName === "bodyPoser.toggleHandles") {
+	if (data.func === "bodyPoser.toggleHandles") {
 		handlesVisible = !handlesVisible;
 
 		if (handlesVisible) {
@@ -309,7 +309,7 @@ Messages.messageReceived.connect((channel, msg, senderID, _localOnly) => {
 		} else {
 			LP_HideHandles();
 		}
-	} else if (data.funcName === "bodyPoser.toggle") {
+	} else if (data.func === "bodyPoser.toggle") {
 		enabled = !enabled;
 
 		if (enabled) {
@@ -339,7 +339,7 @@ Messages.messageReceived.connect((channel, msg, senderID, _localOnly) => {
 		}
 	}
 
-	if (data.funcName.startsWith("bodyPoser.toggle")) {
+	if (data.func.startsWith("bodyPoser.toggle")) {
 		actionSet[0].text = enabled ? "[X] Enabled" : "[  ] Enabled";
 
 		actionSet[1].text = handlesVisible ? "[X] Show handles" : "[  ] Show handles";
@@ -348,23 +348,23 @@ Messages.messageReceived.connect((channel, msg, senderID, _localOnly) => {
 		ContextMenu.editActionSet("bodyPoser.menu", actionSet);
 	}
 
-	if (data.funcName.startsWith("bodyPoser.setting")) {
-		if (data.funcName === "bodyPoser.setting.public") {
+	if (data.func.startsWith("bodyPoser.setting")) {
+		if (data.func === "bodyPoser.setting.public") {
 			settings.public = !settings.public;
 		}
-		if (data.funcName === "bodyPoser.setting.toggleUpperBody") {
+		if (data.func === "bodyPoser.setting.toggleUpperBody") {
 			settings.upperBodyHandles = !settings.upperBodyHandles;
 		}
-		if (data.funcName === "bodyPoser.setting.toggleLowerBody") {
+		if (data.func === "bodyPoser.setting.toggleLowerBody") {
 			settings.lowerBodyHandles = !settings.lowerBodyHandles;
 		}
-		if (data.funcName === "bodyPoser.setting.toggleHips") {
+		if (data.func === "bodyPoser.setting.toggleHips") {
 			settings.hipsHandle = !settings.hipsHandle;
 		}
-		if (data.funcName === "bodyPoser.setting.toggleSpine2") {
+		if (data.func === "bodyPoser.setting.toggleSpine2") {
 			settings.spine2Handle = !settings.spine2Handle;
 		}
-		if (data.funcName === "bodyPoser.setting.toggleHead") {
+		if (data.func === "bodyPoser.setting.toggleHead") {
 			settings.headHandle = !settings.headHandle;
 		}
 

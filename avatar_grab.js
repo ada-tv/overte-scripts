@@ -319,7 +319,7 @@ function S_MsgRecv(channel, rawdata, senderID, localOnly) {
 
 		const data = JSON.parse(rawdata);
 
-		switch (data.funcName) {
+		switch (data.func) {
 			case "avatarGrabSettings.toggleActive":
 				grabActiveEnabled = !grabActiveEnabled;
 				contextActionSet.toggleActive.text = (grabActiveEnabled ? "[X]" : "[   ]") + " Can grab avatars";

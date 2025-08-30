@@ -91,7 +91,7 @@ Messages.messageReceived.connect((channel, msg, senderID, localOnly) => {
 		localOnly
 	) {
 		const data = JSON.parse(msg);
-		if (data.funcName === "quickChat.toggle") {
+		if (data.func === "quickChat.toggle") {
 			if (guiEntity) {
 				webEventHandler(JSON.stringify({ action: "close" }));
 			} else {

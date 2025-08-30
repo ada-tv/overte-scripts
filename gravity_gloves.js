@@ -72,7 +72,7 @@ Messages.messageReceived.connect((channel, msg, senderID, _localOnly) => {
 
 	const data = JSON.parse(msg);
 
-	if (data.funcName === "gravityGloves.toggle") {
+	if (data.func === "gravityGloves.toggle") {
 		enabled = !enabled;
 		ctxAction.textColor = enabled ? [0, 0, 0] : [255, 192, 0];
 		ctxAction.backgroundColor = enabled ? [255, 192, 0] : [0, 0, 0];
