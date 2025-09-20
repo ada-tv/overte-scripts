@@ -129,68 +129,6 @@
         },
         {
             "angularDamping": 0,
-            "canCastShadow": false,
-            "damping": 0,
-            "dimensions": {
-                "x": 2.0999999046325684,
-                "y": 3.0999999046325684,
-                "z": 0.05000000074505806
-            },
-            "grab": {
-                "grabbable": false
-            },
-            "id": "{a02e9e54-9d5b-4166-8c88-7aa0bf1e55d6}",
-            "name": "Mirror Frame",
-            "position": {
-                "x": 0.800000011920929,
-                "y": 0,
-                "z": -2
-            },
-            "registrationPoint": {
-                "x": 0.5,
-                "y": 0,
-                "z": 1
-            },
-            "rotation": {
-                "w": 0.9807852506637573,
-                "x": 0,
-                "y": -0.19509032368659973,
-                "z": 0
-            },
-            "shape": "Cube",
-            "type": "Box"
-        },
-        {
-            "angularDamping": 0,
-            "canCastShadow": false,
-            "damping": 0,
-            "dimensions": {
-                "x": 2,
-                "y": 3,
-                "z": 0.05000000074505806
-            },
-            "grab": {
-                "grabbable": false
-            },
-            "id": "{632bb9e6-8ee6-47ea-80bb-ecad14eccf61}",
-            "mirrorMode": "mirror",
-            "name": "Mirror",
-            "parentID": "{a02e9e54-9d5b-4166-8c88-7aa0bf1e55d6}",
-            "position": {
-                "x": -5.960464477539063e-08,
-                "y": 0,
-                "z": 2.384185791015625e-07
-            },
-            "registrationPoint": {
-                "x": 0.5,
-                "y": 0,
-                "z": 0.8999999761581421
-            },
-            "shape": "Cube",
-            "type": "Box"
-        },
-        {
-            "angularDamping": 0,
             "damping": 0,
             "dimensions": {
                 "x": 1,

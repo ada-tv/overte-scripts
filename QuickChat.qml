@@ -15,11 +15,13 @@ RowLayout {
 		text: "×"
 		palette.buttonText: quickChat.darkMode ? "white" : "black";
 		font.pixelSize: 20
-		Layout.fillHeight: true
+		horizontalPadding: 2
+		verticalPadding: 2
 
 		background: Rectangle {
-			implicitWidth: 40
-			implicitHeight: 40
+			radius: Math.max(height, width) / 2
+			implicitWidth: 30
+			implicitHeight: 30
 			color: quickChat.darkMode ?
 				(parent.pressed ? "#60001d" : "#7c1534") :
 				(parent.pressed ? "#e2b1be" : "#eac7d0")
@@ -41,8 +43,11 @@ RowLayout {
 
 		Layout.fillWidth: true
 		Layout.fillHeight: true
+		Layout.leftMargin: 4
+		Layout.rightMargin: 4
 
 		background: Rectangle {
+			radius: 4
 			color: quickChat.darkMode ? "#2f2b3d" : "#eeeeee";
 			border.color: quickChat.darkMode ? "#1d192b" : "#aaaaaa";
 		}
@@ -75,11 +80,13 @@ RowLayout {
 		font.pixelSize: 20
 		palette.button: quickChat.darkMode ? "#2f2b3d" : "#eeeeee";
 		palette.buttonText: quickChat.darkMode ? "white" : "black";
-		Layout.fillHeight: true
+		horizontalPadding: 2
+		verticalPadding: 2
 
 		background: Rectangle {
-			implicitWidth: 40
-			implicitHeight: 40
+			radius: Math.max(height, width) / 2
+			implicitWidth: 30
+			implicitHeight: 30
 			color: parent.pressed ? 
 				(quickChat.darkMode ? "#252135" : "#aaaaaa") :
 				(quickChat.darkMode ? "#2f2b3d" : "#eeeeee")
