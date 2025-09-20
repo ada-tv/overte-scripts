@@ -97,6 +97,8 @@ function S_SphereCapsuleTest(org, handRadius) {
 			color: {r: 0, g: 255, b: 255},
 			collisionless: true,
 			unlit: true,
+			ignorePickIntersection: true,
+			grab: {grabbable: false},
 		}, "local");
 		Entities.addEntity({
 			type: "Sphere",
@@ -107,6 +109,8 @@ function S_SphereCapsuleTest(org, handRadius) {
 			color: {r: 0, g: 255, b: 255},
 			collisionless: true,
 			unlit: true,
+			ignorePickIntersection: true,
+			grab: {grabbable: false},
 		}, "local");
 		Entities.addEntity({
 			type: "Sphere",
@@ -117,6 +121,8 @@ function S_SphereCapsuleTest(org, handRadius) {
 			color: {r: 0, g: 255, b: 255},
 			collisionless: true,
 			unlit: true,
+			ignorePickIntersection: true,
+			grab: {grabbable: false},
 		}, "local");
 		Entities.addEntity({
 			type: "Sphere",
@@ -127,6 +133,8 @@ function S_SphereCapsuleTest(org, handRadius) {
 			color: {r: 0, g: 255, b: 255},
 			collisionless: true,
 			unlit: true,
+			ignorePickIntersection: true,
+			grab: {grabbable: false},
 		}, "local");
 		Entities.addEntity({
 			type: "Sphere",
@@ -137,6 +145,8 @@ function S_SphereCapsuleTest(org, handRadius) {
 			color: {r: 0, g: 255, b: 255},
 			collisionless: true,
 			unlit: true,
+			ignorePickIntersection: true,
+			grab: {grabbable: false},
 		}, "local");
 	}
 
@@ -205,6 +215,8 @@ function S_GrabSend(joint = "RightHand") {
 			color: {r: 0, g: 255, b: 0},
 			collisionless: true,
 			unlit: true,
+			ignorePickIntersection: true,
+			grab: {grabbable: false},
 		}, "local");
 	}
 
@@ -240,6 +252,8 @@ function S_ReleaseSend(jointName) {
 			color: {r: 255, g: 0, b: 0},
 			collisionless: true,
 			unlit: true,
+			ignorePickIntersection: true,
+			grab: {grabbable: false},
 		}, "local");
 	}
 
@@ -254,20 +268,17 @@ let rightReleaseAlreadySent = false;
 
 function S_InputEvent(action, value) {
 	if (action === Controller.Standard.LeftGrip) {
-		if (value > 0.9 && !leftGrabAlreadySent) {
+		if (value > 0.3 && !leftGrabAlreadySent) {
 			S_GrabSend("LeftHand");
 			leftGrabAlreadySent = true;
 			leftReleaseAlreadySent = false;
-		} else if (value < 0.2 && !leftReleaseAlreadySent) {
+		} else if (value < 0.1 && !leftReleaseAlreadySent) {
 			S_ReleaseSend("LeftHand");
 			leftGrabAlreadySent = false;
 			leftReleaseAlreadySent = true;
 		}
-		return;
-	}
-
-	if (action === Controller.Standard.RightGrip) {
-		if (value > 0.9 && !rightGrabAlreadySent) {
+	} else if (action === Controller.Standard.RightGrip) {
+		if (value > 0.3 && !rightGrabAlreadySent) {
 			S_GrabSend("RightHand");
 			rightGrabAlreadySent = true;
 			rightReleaseAlreadySent = false;
@@ -276,7 +287,7 @@ function S_InputEvent(action, value) {
 				S_GrabSend("Head");
 				grabbedWithHead = true;
 			}
-		} else if (value < 0.2 && !rightReleaseAlreadySent) {
+		} else if (value < 0.1 && !rightReleaseAlreadySent) {
 			S_ReleaseSend("RightHand");
 			rightGrabAlreadySent = false;
 			rightReleaseAlreadySent = true;
@@ -286,7 +297,6 @@ function S_InputEvent(action, value) {
 				grabbedWithHead = false;
 			}
 		}
-		return;
 	}
 }
 
