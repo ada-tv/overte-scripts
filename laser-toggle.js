@@ -1,3 +1,4 @@
+// To trigger gesture: Pull both triggers with the controllers behind your head
 "use strict";
 const INPUT_LT_CLICK = Controller.Standard.LTClick;
 const INPUT_RT_CLICK = Controller.Standard.RTClick;

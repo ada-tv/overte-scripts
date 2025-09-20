@@ -1,7 +1,7 @@
-// To trigger gesture: Double-tap dominant trigger near your ear
+// To trigger gesture: Tap non-dominant controller grip twice near your ear
 "use strict";
-const INPUT_LT_CLICK = Controller.Standard.LTClick;
-const INPUT_RT_CLICK = Controller.Standard.RTClick;
+const INPUT_LEFT_GRIP = Controller.Standard.LeftGrip;
+const INPUT_RIGHT_GRIP = Controller.Standard.RightGrip;
 const INPUT_HEAD = Controller.Standard.Head;
 const INPUT_LEFT_HAND = Controller.Standard.LeftHand;
 const INPUT_RIGHT_HAND = Controller.Standard.RightHand;
@@ -9,9 +9,10 @@ const INPUT_RIGHT_HAND = Controller.Standard.RightHand;
 const GESTURE_DOUBLE_TAP_TIME_MS = 500;
 
 let lastClickTime = Date.now();
+let alreadyPressed = false;
 
 function triggerGesture(leftHanded) {
-	const INPUT_HAND = leftHanded ? INPUT_LEFT_HAND : INPUT_RIGHT_HAND;
+	const INPUT_HAND = leftHanded ? INPUT_RIGHT_HAND : INPUT_LEFT_HAND;
 
 	const poses = {
 		head: Controller.getPoseValue(INPUT_HEAD),
@@ -31,16 +32,18 @@ function triggerGesture(leftHanded) {
 		Math.abs(handRel.y) < 0.15 &&
 		Math.abs(handRel.x) < 0.25
 	) {
-		Controller.triggerHapticPulse(1, 150, 2);
-		Window.takeSnapshot();
+		Controller.triggerHapticPulse(1, 50, leftHanded ? 1 : 0);
+		MyAvatar.userRecenterModel = (MyAvatar.userRecenterModel === 3) ? 0 : 3;
 	}
 }
 
 Controller.inputEvent.connect((action, value) => {
 	const leftHanded = MyAvatar.getDominantHand() === "left";
-	const INPUT_CLICK = leftHanded ? INPUT_LT_CLICK : INPUT_RT_CLICK;
+	const INPUT_CLICK = leftHanded ? INPUT_RIGHT_GRIP : INPUT_LEFT_GRIP;
 
-	if (action === INPUT_CLICK && value > 0.5) {
+	if (action === INPUT_CLICK && value > 0.5 && !alreadyPressed) {
+		alreadyPressed = true;
+
 		const now = Date.now();
 
 		if (now < lastClickTime + GESTURE_DOUBLE_TAP_TIME_MS) {
@@ -48,5 +51,9 @@ Controller.inputEvent.connect((action, value) => {
 		}
 
 		lastClickTime = now;
+	}
+
+	if (action === INPUT_CLICK && value < 0.5) {
+		alreadyPressed = false;
 	}
 });
