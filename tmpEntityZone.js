@@ -52,6 +52,9 @@
 			alignment: "center",
 			verticalAlignment: "center",
 			lineHeight: 0.2,
+			textEffect: "outline fill",
+			textEffectColor: [0, 0, 0],
+			textEffectThickness: 0.3,
 		}, "local");
 
 		if (clickActivated) {

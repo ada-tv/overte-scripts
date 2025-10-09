@@ -18,6 +18,11 @@ function triggerGesture(leftHanded) {
 		head: Controller.getPoseValue(INPUT_HEAD),
 		hand: Controller.getPoseValue(INPUT_HAND),
 	};
+
+	const scaleInv = 1.0 / MyAvatar.getSensorToWorldScale();
+	poses.head.translation = Vec3.multiply(scaleInv, poses.head.translation);
+	poses.hand.translation = Vec3.multiply(scaleInv, poses.hand.translation);
+
 	const headRotInv = Quat.inverse(poses.head.rotation);
 	const handRel = Vec3.multiplyQbyV(
 		headRotInv,
@@ -28,9 +33,9 @@ function triggerGesture(leftHanded) {
 	);
 
 	if (
-		Math.abs(handRel.z) < 0.15 &&
-		Math.abs(handRel.y) < 0.15 &&
-		Math.abs(handRel.x) < 0.25
+		Math.abs(handRel.z) < 0.3 &&
+		Math.abs(handRel.y) < 0.3 &&
+		Math.abs(handRel.x) < 0.3
 	) {
 		Controller.triggerHapticPulse(1, 50, leftHanded ? 1 : 0);
 		MyAvatar.userRecenterModel = (MyAvatar.userRecenterModel === 3) ? 0 : 3;

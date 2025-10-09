@@ -26,12 +26,19 @@ Controller.inputEvent.connect((action, value) => {
 			left: Controller.getPoseValue(INPUT_LEFT_HAND),
 			right: Controller.getPoseValue(INPUT_RIGHT_HAND),
 		};
+
+		const scaleInv = 1.0 / MyAvatar.getSensorToWorldScale();
+		poses.head.translation = Vec3.multiply(scaleInv, poses.head.translation);
+		poses.left.translation = Vec3.multiply(scaleInv, poses.left.translation);
+		poses.right.translation = Vec3.multiply(scaleInv, poses.right.translation);
+
 		const headRotInv = Quat.inverse(poses.head.rotation);
 		const leftRel = Vec3.multiplyQbyV(headRotInv, poses.left.translation);
 		const rightRel = Vec3.multiplyQbyV(headRotInv, poses.right.translation);
 
-		if (leftRel.z < -0.15 && rightRel.z < -0.15) {
+		if (leftRel.z < -0.05 && rightRel.z < -0.05) {
 			lasersDisabled = !lasersDisabled;
+			Window.displayAnnouncement(lasersDisabled ? "Lasers disabled" : "Lasers enabled");
 			Messages.sendLocalMessage("Hifi-Hand-Disabler", lasersDisabled ? "both" : "none");
 			Controller.triggerHapticPulse(1, 5, 2);
 		}
