@@ -3,11 +3,6 @@ const VER_REGEX = /(?:([A-Za-z]*)-)?([0-9]+)(?:-|\.)([0-9]+)(?:-|\.)([0-9]+)?(?:
 const VERSION_PARTS = BUILD_VERSION.match(VER_REGEX);
 const BUILTIN_SCRIPTS = ScriptDiscoveryService.getPublic();
 
-// Unfortunately the build date constant isn't quite reliable yet,
-// so we have to use the version string instead. On 2025.05.01 the
-// date is in dd/MM/yyyy, and at the moment About.buildDate is broken
-// on master.
-
 // Dev versions have the build date as the version
 function devVersionGeq(year, month, day) {
 	if (VERSION_PARTS[1] !== "Dev") { return false; }
@@ -49,11 +44,13 @@ module.exports = {
 	antialiasedText: releaseVersionGreater(2025, 5, 1) || devVersionGeq(2025, 6, 7),
 	chatBubbles: releaseVersionGreater(2025, 5, 1) || devVersionGeq(2025, 6, 23),
 
-	// likely to be merged in 2025-08
-	contextMenu: builtinScript("contextMenu.js"),
+	contextMenu: releaseVersionGreater(2025, 5, 1) || devVersionGeq(2025, 8, 24) || builtinScript("contextMenu.js"),
 
-	// in the protocol_changes branch, likely after 2025-08
+	// in the protocol_changes branch, after 2025-09
 	canvasEntity: builtinScript("canvasCommand.js"),
 	scriptEntity: false,
 	emptyEntity: false,
+
+	// OpenVR supports controller velocities already
+	controllerVelocities: !Controller.getDeviceNames().includes("OpenXR")
 };

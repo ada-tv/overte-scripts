@@ -1,15 +1,13 @@
+// Avatar Grab
+// Created by Ada <ada@thingvellir.net> on 2025-04-06
 // SPDX-License-Identifier: CC0-1.0
-// Avatar Grab, written by Ada <ada@thingvellir.net> 2025
+"use strict";
+
+const ContextMenu = Script.require("contextMenu");
+
 const DEBUG = false;
 const msgChannel = "AvatarGrab";
 const leave_action = Controller.findAction("TranslateY");
-
-const VersionFeatures = Script.require(Script.resolvePath("versionFeatures.js"));
-const ContextMenu = Script.require(
-	VersionFeatures.contextMenu ?
-		"contextMenu" :
-		Script.resolvePath("contextMenuApi.js")
-);
 
 let grabActiveEnabled = true, grabTargetEnabled = true;
 let footGrabEnabled = false, headGrabEnabled = false;
@@ -43,6 +41,9 @@ let currentGrabJoint;
 let S_Dbg = DEBUG ? ((msg) => print(msg)) : ((_msg) => {});
 
 function S_Leave() {
+	// FIXME: This doesn't always set the avatar's rotation to Quat.IDENTITY.
+	// There's some engine weirdness with the camera that rotates the avatar
+	// to wonky angles sometimes.
 	MyAvatar.endSit(MyAvatar.position, Quat.IDENTITY);
 	MyAvatar.setParentID(Uuid.NULL);
 	MyAvatar.setOtherAvatarsCollisionsEnabled(true);
@@ -173,6 +174,8 @@ function S_GrabRecv(grabberID, jointName, radius, origin) {
 
 	if (!S_SphereCapsuleTest(origin, radius)) { return; }
 
+	// FIXME: This can trigger parenting loops. The engine is *supposed*
+	// to prevent that, but it somehow gets through and crashes the grabbed target.
 	MyAvatar.setParentID(target_id);
 	MyAvatar.setParentJointIndex(targ_joint);
 	MyAvatar.beginSit(MyAvatar.position, MyAvatar.orientation);

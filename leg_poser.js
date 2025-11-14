@@ -1,15 +1,9 @@
-const QueryOptions = Script.require(Script.resolvePath("queryOptions.js"));
-const VersionFeatures = Script.require(Script.resolvePath("versionFeatures.js"));
-const ContextMenu = Script.require(
-	VersionFeatures.contextMenu ?
-		"contextMenu" :
-		Script.resolvePath("contextMenuApi.js")
-);
+// Body poser
+// Created by Ada <ada@thingvellir.net> on 2025-06-02
+// SPDX-License-Identifier: CC0-1.0
+"use strict";
 
-const USE_GRAB_HACK = !VersionFeatures.grabbableLocalEntities;
-if (USE_GRAB_HACK) {
-	console.warn("Grabbable local entities not supported, using workaround… Other players won't see the handles, but will still be able to grab them!");
-}
+const ContextMenu = Script.require("contextMenu");
 
 let settings = Settings.getValue("Body Poser", {
 	upperBodyHandles: true,
@@ -19,7 +13,7 @@ let settings = Settings.getValue("Body Poser", {
 	headHandle: true,
 	public: false,
 });
-let presets = Settings.getValue("Body Poser/Presets", {});
+//let presets = Settings.getValue("Body Poser/Presets", {});
 
 let hasHandles = false;
 let enabled = false;
@@ -98,6 +92,7 @@ function LP_AnimHandlerFunc(_dummy) {
 		rightHandRotation: data["RightHand"]["rotation"],
 
 		// mapping the elbows to the hand rotation looks janky
+		// see https://github.com/overte-org/overte/issues/1865
 		/*leftHandPoleVectorEnabled: true,
 		leftHandPoleVector: Vec3.multiply(-1, Quat.getForward(data["LeftHand"]["rotation"])),
 
@@ -131,31 +126,13 @@ function LP_CreateHandles(jointNames) {
 			localPosition: MyAvatar.getAbsoluteDefaultJointTranslationInObjectFrame(jointIndex),
 			localDimensions: handleSize,
 			collisionless: true,
-			alpha: (USE_GRAB_HACK && !settings.public) ? 0.0 : 0.5,
+			alpha: 0.5,
 			color: color,
 			unlit: true,
 			visible: handlesVisible,
 			grab: {grabbable: handlesVisible},
 			renderLayer: "front",
-		}, (USE_GRAB_HACK || settings.public) ? "avatar" : "local");
-
-		// local entities aren't properly grabbable on 2025.05.1,
-		// so have invisible grabbable avatar entities with local visuals
-		if (USE_GRAB_HACK && !settings.public) {
-			jointHandleVisuals[joint] = Entities.addEntity({
-				parentID: jointHandleEntities[joint],
-				type: "Box",
-				name: `Body poser handle visual (${joint})`,
-				localDimensions: handleSize,
-				collisionless: true,
-				alpha: 0.5,
-				color: color,
-				unlit: true,
-				visible: handlesVisible,
-				grab: {grabbable: false},
-				ignorePickIntersection: true,
-			}, "local");
-		}
+		}, settings.public ? "avatar" : "local");
 	}
 
 	if (!HMD.active && settings.upperBodyHandles && settings.lowerBodyHandles) {
@@ -222,9 +199,9 @@ Script.scriptEnding.connect(() => {
 	ContextMenu.unregisterActionSet("bodyPoser");
 	ContextMenu.unregisterActionSet("bodyPoser.menu");
 	ContextMenu.unregisterActionSet("bodyPoser.settings");
-	ContextMenu.unregisterActionSet("bodyPoser.presets");
+	//ContextMenu.unregisterActionSet("bodyPoser.presets");
 	Settings.setValue("Body Poser", settings);
-	Settings.setValue("Body Poser/Presets", presets);
+	//Settings.setValue("Body Poser/Presets", presets);
 });
 
 const actionSet = [
@@ -239,11 +216,12 @@ const actionSet = [
 		textColor: [128, 128, 128],
 		priority: -4.9,
 	},
-	{
+	// TODO
+	/*{
 		text: "> Presets",
 		submenu: "bodyPoser.presets",
 		priority: -4.8,
-	},
+	},*/
 	{
 		text: "> Settings",
 		submenu: "bodyPoser.settings",
@@ -293,7 +271,7 @@ ContextMenu.registerActionSet("bodyPoser", [{
 
 ContextMenu.registerActionSet("bodyPoser.menu", actionSet, undefined, "Body Poser");
 ContextMenu.registerActionSet("bodyPoser.settings", settingsActions, undefined, "Body Poser/Settings");
-ContextMenu.registerActionSet("bodyPoser.presets", [], undefined, "Body Poser/Presets");
+//ContextMenu.registerActionSet("bodyPoser.presets", [], undefined, "Body Poser/Presets");
 
 Messages.messageReceived.connect((channel, msg, senderID, _localOnly) => {
 	if (channel !== ContextMenu.CLICK_FUNC_CHANNEL) { return; }
