@@ -71,42 +71,43 @@ let keyStates = {
 	tailRight: false,
 };
 
-function keyPress(key, pressed) {
+function keyPress(e, pressed) {
+	const key = e.key;
 	targetState.earPitch = 0;
 	targetState.tailYaw = 0;
 
-	if (key === 0x49 /* Qt::Key_I */) { keyStates.earUp = pressed; }
+	if (key === 0x49 /* Qt::Key_I */ || text === "i" ) { keyStates.earUp = pressed; }
 	if (keyStates.earUp) { targetState.earPitch += 45; }
 
-	if (key === 0x4b /* Qt::Key_K */) { keyStates.earDown = pressed; }
+	if (key === 0x4b /* Qt::Key_K */ || text === "k") { keyStates.earDown = pressed; }
 	if (keyStates.earDown) { targetState.earPitch -= 45; }
 
-	if (key === 0x4a /* Qt::Key_J */) { keyStates.tailLeft = pressed; }
+	if (key === 0x4a /* Qt::Key_J */ || text === "j") { keyStates.tailLeft = pressed; }
 	if (keyStates.tailLeft) { targetState.tailYaw -= 60; }
 
-	if (key === 0x4c /* Qt::Key_L */) { keyStates.tailRight = pressed; }
+	if (key === 0x4c /* Qt::Key_L */ || text === "l") { keyStates.tailRight = pressed; }
 	if (keyStates.tailRight) { targetState.tailYaw += 60; }
 
-	if (key === 0x2c /* Qt::Key_Comma */) {
+	if (key === 0x2c /* Qt::Key_Comma */ || text === ",") {
 		targetState.tongueOut = pressed ? 1 : 0;
 	}
 
-	if (key === 0x2e /* Qt::Key_Period */) {
+	if (key === 0x2e /* Qt::Key_Period */ || text === ".") {
 		targetState.squint = pressed ? 1 : 0;
 	}
 
-	if (key === 0x3b /* Qt::Key_Semicolon */) {
+	if (key === 0x3b /* Qt::Key_Semicolon */ || text === ";") {
 		targetState.jawOpen = pressed ? 1 : 0;
 	}
 
-	if (key === 0x5b /* Qt::Key_BracketLeft */) {
+	if (key === 0x5b /* Qt::Key_BracketLeft */ || test === "[") {
 		targetState.happy = pressed ? 1 : 0;
 	}
 
-	if (key === 0x5d /* Qt::Key_BracketRight */) {
+	if (key === 0x5d /* Qt::Key_BracketRight */ || test === "]") {
 		targetState.angry = pressed ? 1 : 0;
 	}
 }
 
-Controller.keyPressEvent.connect(e => keyPress(e.key, true));
-Controller.keyReleaseEvent.connect(e => keyPress(e.key, false));
+Controller.keyPressEvent.connect(e => keyPress(e, true));
+Controller.keyReleaseEvent.connect(e => keyPress(e, false));
