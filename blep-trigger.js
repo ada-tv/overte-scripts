@@ -35,11 +35,11 @@ Script.update.connect(() => {
 	MyAvatar.setBlendshape("MouthSmile_L", currentState.happy);
 
 	const earAngle = Quat.fromPitchYawRollDegrees(currentState.earPitch, 0, 0);
-	MyAvatar.setJointRotation("EarL_Root", earAngle);
-	MyAvatar.setJointRotation("EarR_Root", earAngle);
+	MyAvatar.setJointRotation("L Ear Rot", earAngle);
+	MyAvatar.setJointRotation("R Ear Rot", earAngle);
 
 	const tailAngle = Quat.fromPitchYawRollDegrees(0, currentState.tailYaw, 0);
-	MyAvatar.setJointRotation("Tail_Root", tailAngle);
+	MyAvatar.setJointRotation("Tail Rot", tailAngle);
 });
 
 Controller.inputEvent.connect((action, value) => {
@@ -73,6 +73,7 @@ let keyStates = {
 
 function keyPress(e, pressed) {
 	const key = e.key;
+	const text = e.text;
 	targetState.earPitch = 0;
 	targetState.tailYaw = 0;
 
@@ -100,13 +101,14 @@ function keyPress(e, pressed) {
 		targetState.jawOpen = pressed ? 1 : 0;
 	}
 
-	if (key === 0x5b /* Qt::Key_BracketLeft */ || test === "[") {
+	if (key === 0x5b /* Qt::Key_BracketLeft */ || text === "[") {
 		targetState.happy = pressed ? 1 : 0;
 	}
 
-	if (key === 0x5d /* Qt::Key_BracketRight */ || test === "]") {
+	if (key === 0x5d /* Qt::Key_BracketRight */ || text === "]") {
 		targetState.angry = pressed ? 1 : 0;
 	}
+
 }
 
 Controller.keyPressEvent.connect(e => keyPress(e, true));
