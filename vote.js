@@ -70,6 +70,8 @@
 		});
 
 		this.refresh();
+
+		console.debug(`${params.displayName} voted ${params.vote}`);
 	}
 
 	refresh() {
@@ -84,7 +86,7 @@
 			switch (entry.vote) {
 				case "yes": yesVotes++; break;
 				case "abstain": abstainVotes++; break;
-				case "noVotes": noVotes++; break;
+				case "no": noVotes++; break;
 			}
 		}
 
@@ -106,6 +108,8 @@
 			Entities.editEntity(this.optionAbstainID, { text: "Abstain" });
 			Entities.editEntity(this.optionNoID, { text: "No" });
 		}
+
+		console.debug(`Yes (${yesVotes}), Abstain (${abstainVotes}), No (${noVotes})`);
 	}
 
 	buttonClickScript(vote) {
