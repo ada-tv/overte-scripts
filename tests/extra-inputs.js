@@ -13,6 +13,7 @@ const XR = Controller.Hardware.OpenXR;
 const inputHandles = {
 	left: {
 		triggerTouch: XR.LTTouch,
+		triggerClick: XR.LTClick,
 		thumbstickTouch: XR.LSTouch,
 		primaryTouch: XR.LeftPrimaryTouch,
 		secondaryTouch: XR.LeftSecondaryTouch,
@@ -24,6 +25,7 @@ const inputHandles = {
 	},
 	right: {
 		triggerTouch: XR.RTTouch,
+		triggerClick: XR.RTClick,
 		thumbstickTouch: XR.RSTouch,
 		primaryTouch: XR.RightPrimaryTouch,
 		secondaryTouch: XR.RightSecondaryTouch,
@@ -55,7 +57,7 @@ function fetchInputs() {
 const defaultProps = {
 	parentID: MyAvatar.sessionUUID,
 	type: "Text",
-	lineHeight: 0.02,
+	lineHeight: 0.015,
 	dimensions: [0.2, 0.2, 0.1],
 	localPosition: [0.0, 0.3, 0.0],
 	backgroundAlpha: 0.8,

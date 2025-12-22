@@ -12,7 +12,7 @@ function devVersionGeq(year, month, day) {
 }
 
 // release versions have the year, month, and patch versions
-function releaseVersionGreater(year, month, _patch) {
+function releaseVersionGeq(year, month, _patch) {
 	if (VERSION_PARTS[1] !== null) { return false; }
 	if (year >= Number(VERSION_PARTS[2])) { return true; }
 	if (month >= Number(VERSION_PARTS[3])) { return true; }
@@ -40,17 +40,17 @@ function scriptIsRunning(name) {
 }
 
 module.exports = {
-	grabbableLocalEntities: releaseVersionGreater(2025, 5, 1) || devVersionGeq(2025, 6, 8),
-	antialiasedText: releaseVersionGreater(2025, 5, 1) || devVersionGeq(2025, 6, 7),
-	chatBubbles: releaseVersionGreater(2025, 5, 1) || devVersionGeq(2025, 6, 23),
+	grabbableLocalEntities: releaseVersionGeq(2025, 9, 1) || devVersionGeq(2025, 6, 8),
+	antialiasedText: releaseVersionGeq(2025, 9, 1) || devVersionGeq(2025, 6, 7),
+	chatBubbles: releaseVersionGeq(2025, 9, 1) || devVersionGeq(2025, 6, 23),
 
-	contextMenu: releaseVersionGreater(2025, 5, 1) || devVersionGeq(2025, 8, 24) || builtinScript("contextMenu.js"),
+	contextMenu: releaseVersionGeq(2025, 9, 1) || devVersionGeq(2025, 8, 24) || builtinScript("contextMenu.js"),
 
-	// in the protocol_changes branch, after 2025-09
 	canvasEntity: builtinScript("canvasCommand.js"),
-	scriptEntity: false,
-	emptyEntity: false,
+	scriptEntity: releaseVersionGeq(2025, 12, 1),
+	emptyEntity: releaseVersionGeq(2025, 12, 1),
 
 	// OpenVR supports controller velocities already
-	controllerVelocities: !Controller.getDeviceNames().includes("OpenXR")
+	controllerVelocities: !Controller.getDeviceNames().includes("OpenXR"),
+	extendedXRInputs: Controller?.Hardware?.OpenXR?.LeftHasPrimary !== undefined,
 };
