@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="32"
+   height="32"
+   viewBox="0 0 32 32"
+   version="1.1"
+   id="svg1"
+   inkscape:version="1.4.3 (0d15f75042, 2025-12-25)"
+   sodipodi:docname="quit.svg"
+   inkscape:export-filename="quit.png"
+   inkscape:export-xdpi="384"
+   inkscape:export-ydpi="384"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#c6c6c6"
+     bordercolor="#eeeeee"
+     borderopacity="1"
+     inkscape:showpageshadow="true"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="false"
+     inkscape:deskcolor="#c7c7c7"
+     inkscape:document-units="px"
+     showgrid="true"
+     inkscape:zoom="22.627417"
+     inkscape:cx="17.058951"
+     inkscape:cy="17.611378"
+     inkscape:window-width="1692"
+     inkscape:window-height="1167"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="layer1"
+     showborder="true"
+     labelstyle="default"
+     borderlayer="true"
+     inkscape:export-bgcolor="#00000000">
+    <inkscape:grid
+       id="grid1"
+       units="px"
+       originx="0"
+       originy="0"
+       spacingx="1"
+       spacingy="1"
+       empcolor="#0099e5"
+       empopacity="0.30196078"
+       color="#0099e5"
+       opacity="0.14901961"
+       empspacing="4"
+       enabled="true"
+       visible="true" />
+  </sodipodi:namedview>
+  <defs
+     id="defs1">
+    <inkscape:path-effect
+       effect="powerclip"
+       message=""
+       id="path-effect5"
+       is_visible="true"
+       lpeversion="1"
+       inverse="true"
+       flatten="false"
+       hide_clip="false" />
+    <linearGradient
+       id="linearGradient1"
+       inkscape:collect="always">
+      <stop
+         style="stop-color:#ff9280;stop-opacity:1;"
+         offset="0"
+         id="stop1" />
+      <stop
+         style="stop-color:#fd002e;stop-opacity:1;"
+         offset="0.47999999"
+         id="stop3" />
+      <stop
+         style="stop-color:#bc0033;stop-opacity:1;"
+         offset="1"
+         id="stop2" />
+    </linearGradient>
+    <radialGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient1"
+       id="radialGradient2"
+       cx="14.472629"
+       cy="13.916666"
+       fx="14.472629"
+       fy="13.916666"
+       r="12.5"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="matrix(2.4,1.0820833e-7,-7.3616122e-8,2.5599999,-24.734308,-27.626667)" />
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath5-7">
+      <rect
+         style="display:none;opacity:1;fill:#000000;stroke:none;stroke-width:4;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+         id="rect5-5"
+         width="6"
+         height="10"
+         x="13"
+         y="6"
+         d="m 13,6 h 6 v 10 h -6 z" />
+      <path
+         id="lpe_path-effect5-3"
+         style="opacity:1;fill:#000000;stroke:none;stroke-width:4;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+         class="powerclip"
+         d="M 4,4 H 28 V 28 H 4 Z m 9,2 v 10 h 6 V 6 Z" />
+    </clipPath>
+    <inkscape:path-effect
+       effect="powerclip"
+       message=""
+       id="path-effect5-5"
+       is_visible="true"
+       lpeversion="1"
+       inverse="true"
+       flatten="false"
+       hide_clip="false" />
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipath_lpe_path-effect5-5">
+      <rect
+         style="display:block;opacity:1;fill:#000000;stroke:none;stroke-width:4;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+         id="rect6"
+         width="6"
+         height="10"
+         x="13"
+         y="6" />
+    </clipPath>
+  </defs>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <rect
+       style="fill:none;stroke:#970000;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:1;stroke-width:2;stroke-dasharray:none"
+       id="rect1-6"
+       width="24"
+       height="24"
+       x="4"
+       y="4"
+       rx="4"
+       ry="4" />
+    <rect
+       style="opacity:1;fill:url(#radialGradient2);stroke:#ffe3e3;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:1"
+       id="rect1"
+       width="24"
+       height="24"
+       x="4"
+       y="4"
+       rx="4"
+       ry="4" />
+    <rect
+       style="display:none;opacity:1;fill:#ffffff;stroke:#bf002a;stroke-width:1;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:1;paint-order:stroke fill markers"
+       id="rect3"
+       width="2"
+       height="6"
+       x="15"
+       y="8"
+       rx="0"
+       ry="0" />
+  </g>
+  <g
+     inkscape:groupmode="layer"
+     id="layer2"
+     inkscape:label="Layer 2">
+    <path
+       id="path3"
+       style="baseline-shift:baseline;display:inline;overflow:visible;vector-effect:none;fill:#ffffff;stroke-linecap:round;stroke-linejoin:round;enable-background:accumulate;stop-color:#000000;stop-opacity:1;opacity:1;stroke:#be002a;stroke-opacity:1;paint-order:stroke fill markers"
+       d="M 13 9.6777344 C 10.63885 10.805021 9 13.21818 9 16 C 9 19.854149 12.145851 23 16 23 C 19.854149 23 23 19.854149 23 16 C 23 13.21818 21.36115 10.805021 19 9.6777344 L 19 11.992188 C 20.216421 12.901928 21 14.354873 21 16 C 21 18.773268 18.773268 21 16 21 C 13.226732 21 11 18.773268 11 16 C 11 14.354873 11.783579 12.901928 13 11.992188 L 13 9.6777344 z " />
+    <rect
+       style="opacity:1;fill:#ffffff;fill-opacity:1;stroke:#be002a;stroke-width:1;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;paint-order:stroke fill markers"
+       id="rect7"
+       width="2"
+       height="7"
+       x="15"
+       y="8" />
+  </g>
+</svg>
