@@ -13,6 +13,7 @@
 	/** @type {string} */ const ICON_QUIT = Script.resolvePath("./quit.png");
 	/** @type {string} */ const ICON_CLEANUP = Script.resolvePath("./put_away.png");
 	/** @type {string} */ const ICON_DRAW_CARD = Script.resolvePath("./deal_card.png");
+	/** @type {string} */ const ICON_DELETE = Script.resolvePath("./delete.png");
 	/** @type {string} */ const FONT = Script.resolvePath("./Inter.arfont");
 
 	const CARD_FADEIN_PROPS = {
@@ -23,7 +24,6 @@
 	const CARD_FADEOUT_PROPS = {
 		duration: 2,
 		noiseSize: [0.02, 0.02, 0.02],
-		noiseSpeed: [1, 1, 1],
 		edgeWidth: 0.3,
 		edgeInnerColor: [0, 0, 0],
 		edgeInnerAlpha: 1,
@@ -35,7 +35,12 @@
 	const WHITE_DECK_OFFSET = [DECK_DIMS[0], DECK_DIMS[1] / 2, 0.0];
 	const BLACK_DECK_OFFSET = [-DECK_DIMS[0], DECK_DIMS[1] / 2, 0.0];
 
-	/** @member {string} */ this.rootID = "";
+	const DISCARD_SWEEP_SEC = 2;
+	const DISCARD_AREA_RADIUS = 0.3;
+	const DISCARD_AREA_OFFSET = [-(DECK_DIMS[0] + DISCARD_AREA_RADIUS), DISCARD_AREA_RADIUS * 0.5, 0];
+
+	/** @member {string} */
+	this.rootID = "";
 
 	/**
 	 * URLs to JSON arrays of white card text entries.
@@ -75,7 +80,7 @@
 	/** @member {boolean} */ this.quittable = true;
 
 	/** @member {string[]} */
-	this.remotelyCallable = ["quit", "cleanup", "drawWhiteCard", "drawBlackCard"];
+	this.remotelyCallable = ["quit", "cleanup", "drawWhiteCard", "drawBlackCard", "deleteAll"];
 
 	/** @member {string[]} */ this.cardEntities = [];
 	/** @member {string[]} */ this.guiEntities = [];
@@ -83,6 +88,8 @@
 	this.whiteDeckEntity = "";
 	this.blackDeckEntity = "";
 	this.loadingEntity = "";
+	this.discardAreaEntity = "";
+	this.discardAreaInterval = {};
 
 	this.preload = function(eid) {
 		this.rootID = eid;
@@ -139,81 +146,99 @@
 
 		for (const deck of [this.whiteDeckEntity, this.blackDeckEntity]) {
 			this.guiEntities.push(Entities.addEntity({
-					type: "Image",
-					parentID: deck,
-					localPosition: [0, DECK_DIMS[1], 0],
-					alpha: 0.8,
-					ignorePickIntersection: true,
-					grab: { grabbable: false },
-					dimensions: [0.15, 0.15, 0],
-					emissive: true,
-					keepAspectRatio: true,
-					billboardMode: "full",
-					imageURL: ICON_DRAW_CARD,
-					fadeOutMode: "enabled",
-					fadeOut: CARD_FADEOUT_PROPS,
+				type: "Image",
+				parentID: deck,
+				localPosition: [0, DECK_DIMS[1], 0],
+				alpha: 0.8,
+				ignorePickIntersection: true,
+				grab: { grabbable: false },
+				dimensions: [0.15, 0.15, 0],
+				emissive: true,
+				keepAspectRatio: true,
+				billboardMode: "full",
+				imageURL: ICON_DRAW_CARD,
+				fadeOutMode: "enabled",
+				fadeOut: CARD_FADEOUT_PROPS,
 			}));
 		}
 
 		if (this.quittable) {
 			this.guiEntities.push(Entities.addEntity({
-					type: "Image",
-					parentID: this.rootID,
-					dimensions: [0.15, 0.2, 0.2],
-					keepAspectRatio: true,
-					localPosition: [-0.2, 0.5, -0.15],
-					imageURL: ICON_QUIT,
-					emissive: true,
-					collisionless: true,
-					grab: { grabbable: false },
-					script: `(function() { this.mousePressOnEntity = (eid, e) => {
-						if (e.button !== "Primary") { return; }
-						if (Settings.getValue("io.highfidelity.isEditing", false)) { return; }
-						Entities.callEntityServerMethod(${JSON.stringify(this.rootID)}, "quit");
-					}; })`,
-					fadeOutMode: "enabled",
-					fadeOut: CARD_FADEOUT_PROPS,
-			}));
-		}
-
-		this.guiEntities.push(Entities.addEntity({
 				type: "Image",
 				parentID: this.rootID,
-				dimensions: [0.2, 0.2, 0.2],
+				dimensions: [0.15, 0.2, 0.2],
 				keepAspectRatio: true,
-				localPosition: [this.quittable ? 0.15 : 0, 0.5, -0.15],
-				imageURL: ICON_CLEANUP,
+				localPosition: [-0.2, 0.5, -0.15],
+				imageURL: ICON_QUIT,
 				emissive: true,
 				collisionless: true,
 				grab: { grabbable: false },
 				script: `(function() { this.mousePressOnEntity = (eid, e) => {
 					if (e.button !== "Primary") { return; }
 					if (Settings.getValue("io.highfidelity.isEditing", false)) { return; }
-					Entities.callEntityServerMethod(${JSON.stringify(this.rootID)}, "cleanup");
+					Entities.callEntityServerMethod(${JSON.stringify(this.rootID)}, "quit");
 				}; })`,
 				fadeOutMode: "enabled",
 				fadeOut: CARD_FADEOUT_PROPS,
+			}));
+		}
+
+		this.guiEntities.push(Entities.addEntity({
+			type: "Image",
+			parentID: this.rootID,
+			dimensions: [0.2, 0.2, 0.2],
+			keepAspectRatio: true,
+			localPosition: [this.quittable ? 0.15 : 0, 0.5, -0.15],
+			imageURL: ICON_CLEANUP,
+			emissive: true,
+			collisionless: true,
+			grab: { grabbable: false },
+			script: `(function() { this.mousePressOnEntity = (eid, e) => {
+				if (e.button !== "Primary") { return; }
+				if (Settings.getValue("io.highfidelity.isEditing", false)) { return; }
+				Entities.callEntityServerMethod(${JSON.stringify(this.rootID)}, "cleanup");
+			}; })`,
+			fadeOutMode: "enabled",
+			fadeOut: CARD_FADEOUT_PROPS,
 		}));
 
 		this.guiEntities.push(Entities.addEntity({
-				type: "Text",
-				parentID: this.rootID,
-				dimensions: [0.8, 0.1, 0.2],
-				localPosition: [0, 0.35, -0.15],
-				localRotation: Quat.fromPitchYawRollDegrees(0, 0, 0),
-				collisionless: true,
-				grab: { grabbable: false },
-				fadeOutMode: "enabled",
-				fadeOut: CARD_FADEOUT_PROPS,
-				text: "Cards Against Humanity",
-				textEffect: "outline fill",
-				textEffectThickness: 0.2,
-				textEffectColor: [0, 0, 0],
-				lineHeight: 0.05,
-				alignment: "center",
-				verticalAlignment: "center",
-				font: FONT,
+			type: "Text",
+			parentID: this.rootID,
+			dimensions: [0.8, 0.1, 0.2],
+			localPosition: [0, 0.35, -0.15],
+			localRotation: Quat.fromPitchYawRollDegrees(0, 0, 0),
+			collisionless: true,
+			grab: { grabbable: false },
+			fadeOutMode: "enabled",
+			fadeOut: CARD_FADEOUT_PROPS,
+			text: "Cards Against Humanity",
+			textEffect: "outline fill",
+			textEffectThickness: 0.2,
+			textEffectColor: [0, 0, 0],
+			lineHeight: 0.05,
+			alignment: "center",
+			verticalAlignment: "center",
+			font: FONT,
 		}));
+
+		this.discardAreaEntity = Entities.addEntity({
+			type: "Image",
+			name: "Discard area",
+			parentID: this.rootID,
+			billboardMode: "full",
+			dimensions: [0.15, 0.15, 0.15],
+			keepAspectRatio: true,
+			localPosition: DISCARD_AREA_OFFSET,
+			imageURL: ICON_DELETE,
+			emissive: true,
+			collisionless: true,
+			ignorePickIntersection: true,
+			grab: { grabbable: false },
+			fadeOutMode: "enabled",
+			fadeOut: CARD_FADEOUT_PROPS,
+		});
+		this.guiEntities.push(this.discardAreaEntity);
 
 		this.loadingEntity = Entities.addEntity({
 			type: "Text",
@@ -257,8 +282,24 @@
 		this.blackCardDeck = [...this.blackCardPool];
 
 		Script.setTimeout(() => Entities.deleteEntity(this.loadingEntity), 500);
+		this.discardAreaInterval = Script.setInterval(() => this.tryDiscard(), DISCARD_SWEEP_SEC * 1000);
 
 		this.setup = true;
+	};
+
+	this.tryDiscard = function() {
+		const { position: center } = Entities.getEntityProperties(this.discardAreaEntity, "position");
+
+		const candidates = Entities.findEntitiesByTags(["discardable"], center, DISCARD_AREA_RADIUS / 2);
+		for (const e of candidates) {
+			Entities.deleteEntity(e);
+
+			const index = this.whiteCardPool.indexOf(e);
+
+			if (index === -1) { continue; }
+
+			this.whiteCardPool.splice(index, 1);
+		}
 	};
 
 	this.drawCard = function(black, text) {
@@ -268,6 +309,7 @@
 
 		const card = Entities.addEntity({
 			type: "Text",
+			tags: black ? [] : ["discardable"],
 			parentID: this.rootID,
 			collisionless: true,
 			grab: { grabbable: true },
@@ -291,6 +333,9 @@
 			topMargin: 0.005,
 			bottomMargin: 0.005,
 			lineHeight: 0.02,
+
+			// HACK: Entities.findEntities can only see entities with a server script on them
+			serverScripts: "(function() {})",
 		});
 
 		this.cardEntities.push(card);
@@ -372,9 +417,13 @@
 	};
 
 	this.quit = function() { this.unload(); };
+
 	this.unload = function() {
+		Script.clearInterval(this.discardAreaInterval);
+
 		for (const e of this.cardEntities) { Entities.deleteEntity(e); }
 		for (const e of this.guiEntities) { Entities.deleteEntity(e); }
+
 		Entities.deleteEntity(this.rootID);
 	};
 })
