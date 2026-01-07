@@ -71,7 +71,7 @@ Controller.inputEvent.connect((action, value) => {
 
 	if (action === INPUT_RY) {
 		// activate on right thumbstick down
-		targetState.tailWag = -Math.min(0, value);
+		targetState.tailWag = -Math.min(0, -value);
 	}
 });
 
