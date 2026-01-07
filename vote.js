@@ -113,10 +113,16 @@
 	}
 
 	buttonClickScript(vote) {
+		const callEntityMethod = (
+			Script.context === "entity_server" ?
+			"callEntityServerMethod" :
+			"callEntityMethod"
+		);
+
 		return `(function() {
 			this.mousePressOnEntity = (_, event) => {
 				if (!event.isPrimaryButton) { return; }
-				Entities.callEntityServerMethod(
+				Entities.${callEntityMethod}(
 					${JSON.stringify(this.selfID)},
 					"submitVote",
 					[JSON.stringify({

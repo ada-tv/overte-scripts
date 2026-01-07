@@ -16,6 +16,12 @@
 	/** @type {string} */ const ICON_DELETE = Script.resolvePath("./delete.png");
 	/** @type {string} */ const FONT = Script.resolvePath("./Inter.arfont");
 
+	const callEntityMethod = (
+		Script.context === "entity_server" ?
+		"callEntityServerMethod" :
+		"callEntityMethod"
+	);
+
 	const CARD_FADEIN_PROPS = {
 		duration: 0.3,
 		noiseSize: [0.02, 0.02, 0.02],
@@ -118,7 +124,7 @@
 			script: `(function() { this.mousePressOnEntity = (eid, e) => {
 				if (e.button !== "Primary") { return; }
 				if (Settings.getValue("io.highfidelity.isEditing", false)) { return; }
-				Entities.callEntityServerMethod(${JSON.stringify(this.rootID)}, "drawWhiteCard");
+				Entities.${callEntityMethod}(${JSON.stringify(this.rootID)}, "drawWhiteCard");
 			}; })`,
 			fadeOutMode: "enabled",
 			fadeOut: CARD_FADEOUT_PROPS,
@@ -137,7 +143,7 @@
 			script: `(function() { this.mousePressOnEntity = (eid, e) => {
 				if (e.button !== "Primary") { return; }
 				if (Settings.getValue("io.highfidelity.isEditing", false)) { return; }
-				Entities.callEntityServerMethod(${JSON.stringify(this.rootID)}, "drawBlackCard");
+				Entities.${callEntityMethod}(${JSON.stringify(this.rootID)}, "drawBlackCard");
 			}; })`,
 			fadeOutMode: "enabled",
 			fadeOut: CARD_FADEOUT_PROPS,
@@ -176,7 +182,7 @@
 				script: `(function() { this.mousePressOnEntity = (eid, e) => {
 					if (e.button !== "Primary") { return; }
 					if (Settings.getValue("io.highfidelity.isEditing", false)) { return; }
-					Entities.callEntityServerMethod(${JSON.stringify(this.rootID)}, "quit");
+					Entities.${callEntityMethod}(${JSON.stringify(this.rootID)}, "quit");
 				}; })`,
 				fadeOutMode: "enabled",
 				fadeOut: CARD_FADEOUT_PROPS,
@@ -196,7 +202,7 @@
 			script: `(function() { this.mousePressOnEntity = (eid, e) => {
 				if (e.button !== "Primary") { return; }
 				if (Settings.getValue("io.highfidelity.isEditing", false)) { return; }
-				Entities.callEntityServerMethod(${JSON.stringify(this.rootID)}, "cleanup");
+				Entities.${callEntityMethod}(${JSON.stringify(this.rootID)}, "cleanup");
 			}; })`,
 			fadeOutMode: "enabled",
 			fadeOut: CARD_FADEOUT_PROPS,
