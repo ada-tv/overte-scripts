@@ -115,6 +115,8 @@
 	this.discardAreaEntity = "";
 	this.discardAreaInterval = {};
 
+	this.handHolders = new Map();
+
 	this.preload = function(eid) {
 		this.rootID = eid;
 
@@ -346,11 +348,13 @@
 		for (const e of candidates) {
 			Entities.deleteEntity(e);
 
-			const index = this.whiteCardPool.indexOf(e);
+			const cardIndex = this.whiteCardPool.indexOf(e);
 
-			if (index === -1) { continue; }
+			if (cardIndex === -1) { continue; }
 
-			this.whiteCardPool.splice(index, 1);
+			this.whiteCardPool.splice(cardIndex, 1);
+
+			this.handHolders.delete(e);
 		}
 	};
 
@@ -469,6 +473,9 @@
 	};
 
 	this.spawnHandHolder = function(_id, args) {
+		// don't spawn more than one holder per player
+		if (this.handHolders.get(args[0])) { return; }
+
 		const holder = Entities.addEntity({
 			type: "Sphere",
 			parentID: this.rootID,
@@ -482,16 +489,18 @@
 			script: Script.resolvePath(`./handholder.js?q=${Date.now()}`),
 		});
 
-		// not technically a card, but clean it up when the cleanup button is clicked
-		this.cardEntities.push(holder);
+		this.handHolders.set(holder, args[0]);
+
 		return holder;
 	};
 
 	this.cleanup = function() {
 		for (const e of this.cardEntities) { Entities.deleteEntity(e); }
+		for (const [holder, _] of this.handHolders) { Entities.deleteEntity(holder); }
 
 		this.whiteCardDeck = [...this.whiteCardPool];
 		this.blackCardDeck = [...this.blackCardPool];
+		this.handHolders.clear();
 
 		Entities.editEntity(this.blackDeckEntity, {
 			visible: true,
