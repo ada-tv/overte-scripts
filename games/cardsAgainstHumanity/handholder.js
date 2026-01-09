@@ -218,8 +218,6 @@
 	};
 
 	this.takeCardOwnership = function(_id, args) {
-		//console.log("takeCardOwnership", _id, args[0]);
-
 		const card = args[0];
 		this.cards.push(card);
 		this.cardTargetTransforms.set(card, { position: Vector3.ZERO, rotation: Quaternion.IDENTITY });
@@ -233,8 +231,6 @@
 	};
 
 	this.dropCardOwnership = function(_id, args) {
-		//console.log("dropCardOwnership", _id, args[0]);
-
 		const card = args[0];
 		const index = this.cards.indexOf(card);
 

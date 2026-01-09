@@ -469,7 +469,6 @@
 	};
 
 	this.spawnHandHolder = function(_id, args) {
-		//console.info(this.rootID, "spawnHandHolder", args[0], args[1]);
 		const holder = Entities.addEntity({
 			type: "Sphere",
 			parentID: this.rootID,
@@ -483,7 +482,8 @@
 			script: Script.resolvePath("./handholder.js"),
 		});
 
-		this.guiEntities.push(holder);
+		// not technically a card, but clean it up when the cleanup button is clicked
+		this.cardEntities.push(holder);
 		return holder;
 	};
 
