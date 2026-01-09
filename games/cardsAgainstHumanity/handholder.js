@@ -13,7 +13,7 @@
 	const LOCK_SPRITE = Script.resolvePath("./lock.png");
 	const UNLOCK_SPRITE = Script.resolvePath("./unlock.png");
 
-	const UPDATE_TPS = 60;
+	const UPDATE_TPS = 20;
 	const ON_SERVER = Script.context === "entity_server";
 
 	const callEntityMethodStr = (
