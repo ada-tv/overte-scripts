@@ -1,6 +1,5 @@
 (function() { "use strict";
-	// TODO: this is always a client script, how can i figure this out?
-	const callEntityMethod = Entities.callEntityServerMethod;
+	const callEntityMethod = Entities.callEntityMethod;
 
 	// none of these are documented anywhere, i had to reference the controller scripts
 	this.remotelyCallable = ["startNearGrab", "startDistanceGrab", "releaseGrab"];

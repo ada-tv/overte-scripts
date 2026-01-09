@@ -6,7 +6,6 @@
 		vec3,
 		quat,
 		euler,
-		clamp,
 	} = Script.require(Script.resolvePath("./utilMath.js"));
 
 	const HOLDER_SPRITE = Script.resolvePath("./handholder.png");
@@ -14,13 +13,19 @@
 	const LOCK_SPRITE = Script.resolvePath("./lock.png");
 	const UNLOCK_SPRITE = Script.resolvePath("./unlock.png");
 
-	const UPDATE_TPS = 30;
-	const ON_SERVER = true;
+	const UPDATE_TPS = 60;
+	const ON_SERVER = Script.context === "entity_server";
 
 	const callEntityMethodStr = (
 		ON_SERVER ?
 		"callEntityServerMethod" :
 		"callEntityMethod"
+	);
+
+	const callEntityMethod = (
+		ON_SERVER ?
+		Entities.callEntityServerMethod :
+		Entities.callEntityMethod
 	);
 
 	this.remotelyCallable = [
@@ -41,21 +46,15 @@
 	this.cardTargetTransforms = new Map();
 	this.tickInterval = {};
 	this.positionLocked = false;
+	this.owner = {};
 
 	this.preload = function(holderID) {
 		this.holderID = holderID;
 		const { parentID, userData } = Entities.getEntityProperties(this.holderID, ["parentID", "userData"]);
 		this.rootID = parentID;
 
-		// ????
 		const { ownerID, ownerName } = JSON.parse(userData);
-		//const ownerAvatar = AvatarList.getAvatar(ownerID);
-		//let ownerName = ownerAvatar.sessionDisplayName;
-
-		//if (ownerName === "") { ownerName = ownerAvatar.displayName; }
-		//if (ownerName === "") { ownerName = "?"; }
-
-		//console.info(this.holderID, ownerID, ownerName);
+		this.owner = AvatarList.getAvatar(ownerID);
 
 		const colorHue = Math.random() * Math.PI * 2;
 		const color = Color8.oklch(0.95, 0.2, colorHue);
@@ -108,10 +107,11 @@
 			grab: { grabbable: false },
 			script: `(function(){
 				this.mousePressOnEntity = function(eid) {
-					Entities.${callEntityMethodStr}(
+					const holderID = ${JSON.stringify(this.holderID)};
+					Entities.callEntityServerMethod(
 						${JSON.stringify(this.rootID)},
 						"drawWhiteCardToHand",
-						[${JSON.stringify(this.holderID)}]
+						[holderID,MyAvatar.sessionUUID]
 					);
 				};
 			})`,
@@ -122,7 +122,7 @@
 			parentID: this.holderID,
 			localPosition: [-0.15, -0.05, 0],
 			dimensions: [0.1, 0.1, 0],
-			imageURL: LOCK_SPRITE,
+			imageURL: UNLOCK_SPRITE,
 			emissive: true,
 			collisionless: true,
 			keepAspectRatio: true,
@@ -163,10 +163,9 @@
 
 		if (this.positionLocked) { return; }
 
-		const owner = AvatarList.getAvatar(this.ownerID);
-		const ownerPos = vec3(owner.position);//AvatarList.getAvatar(this.ownerID).position);
-		const ownerRot = quat(owner.orientation);
-		const ownerScale = 1.0;
+		const ownerPos = vec3(this.owner.getNeckPosition());
+		const ownerRot = quat(this.owner.orientation);
+		const ownerScale = vec3(Mat4.extractScale(this.owner.sensorToWorldMatrix)).length();
 
 		if (false) {
 			this.lockPosition();
@@ -219,7 +218,7 @@
 	};
 
 	this.takeCardOwnership = function(_id, args) {
-		console.log("takeCardOwnership", _id, args[0]);
+		//console.log("takeCardOwnership", _id, args[0]);
 
 		const card = args[0];
 		this.cards.push(card);
@@ -234,7 +233,7 @@
 	};
 
 	this.dropCardOwnership = function(_id, args) {
-		console.log("dropCardOwnership", _id, args[0]);
+		//console.log("dropCardOwnership", _id, args[0]);
 
 		const card = args[0];
 		const index = this.cards.indexOf(card);
@@ -257,7 +256,7 @@
 		this.positionLocked = true;
 
 		Entities.editEntity(this.lockButton, {
-			imageURL: UNLOCK_SPRITE,
+			imageURL: LOCK_SPRITE,
 			script: `(function(){
 				this.mousePressOnEntity = _ => {
 					Entities.${callEntityMethodStr}(${JSON.stringify(this.holderID)}, "unlockPosition");
@@ -270,7 +269,7 @@
 		this.positionLocked = false;
 
 		Entities.editEntity(this.lockButton, {
-			imageURL: LOCK_SPRITE,
+			imageURL: UNLOCK_SPRITE,
 			script: `(function(){
 				this.mousePressOnEntity = _ => {
 					Entities.${callEntityMethodStr}(${JSON.stringify(this.holderID)}, "lockPosition");
@@ -288,4 +287,16 @@
 
 		Script.clearInterval(this.tickInterval);
 	};
+
+	this.startNearGrab = function(_id, _args) {
+		callEntityMethod(this.holderID, "lockPosition");
+	};
+
+	this.startDistanceGrab = function(_id, _args) {
+		callEntityMethod(this.holderID, "lockPosition");
+	};
+
+	HMD.displayModeChanged.connect(vr => {
+		if (vr) { callEntityMethod(this.holderID, "lockPosition"); }
+	});
 })

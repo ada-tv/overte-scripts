@@ -246,7 +246,6 @@
 			collisionless: true,
 			grab: { grabbable: false },
 			script: `(function() { this.mousePressOnEntity = (eid, e) => {
-				console.info(eid, "spawnHandHolder");
 				if (!e.isPrimaryButton) { return; }
 				if (Settings.getValue("io.highfidelity.isEditing", false)) { return; }
 				Entities.${callEntityMethodStr}(${JSON.stringify(this.rootID)}, "spawnHandHolder", [MyAvatar.sessionUUID, MyAvatar.sessionDisplayName]);
@@ -459,18 +458,18 @@
 
 	this.drawWhiteCardToHand = function(_id, args) {
 		const handID = args[0];
+		const avatarID = args[1];
 		const card = this.drawWhiteCard();
 
 		if (card === null) { return; }
 
 		Script.setTimeout(() => {
-			console.log("calling takeCardOwnership on", handID, card);
-			callEntityMethod(handID, "takeCardOwnership", [card]);
-		}, 1000);
+			Entities.callEntityClientMethod(avatarID, handID, "takeCardOwnership", [card]);
+		}, 500);
 	};
 
 	this.spawnHandHolder = function(_id, args) {
-		console.info(this.rootID, "spawnHandHolder", args[0], args[1]);
+		//console.info(this.rootID, "spawnHandHolder", args[0], args[1]);
 		const holder = Entities.addEntity({
 			type: "Sphere",
 			parentID: this.rootID,
@@ -481,8 +480,7 @@
 			collisionless: true,
 			grab: { grabbable: true },
 			userData: JSON.stringify({ ownerID: args[0], ownerName: args[1] }),
-			script: ON_SERVER ? Script.resolvePath("./handholder_c.js") : Script.resolvePath("./handholder.js"),
-			serverScripts: ON_SERVER ? Script.resolvePath("./handholder.js") : undefined,
+			script: Script.resolvePath("./handholder.js"),
 		});
 
 		this.guiEntities.push(holder);
