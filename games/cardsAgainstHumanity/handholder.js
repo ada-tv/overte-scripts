@@ -56,6 +56,8 @@
 		const { ownerID, ownerName } = JSON.parse(userData);
 		this.owner = AvatarList.getAvatar(ownerID);
 
+		if (MyAvatar.sessionUUID !== this.owner.sessionUUID) { return; }
+
 		const colorHue = Math.random() * Math.PI * 2;
 		const color = Color8.oklch(0.95, 0.2, colorHue);
 		const colorOutline = Color8.oklch(0.4, 0.05, colorHue);
@@ -135,6 +137,8 @@
 	};
 
 	this.update = function(dt) {
+		if (MyAvatar.sessionUUID !== this.owner.sessionUUID) { return; }
+
 		const epsilon = 0.005;
 
 		for (let [card, { position: targetPos, rotation: targetRot }] of this.cardTargetTransforms) {
@@ -198,6 +202,8 @@
 	};
 
 	this.organizeCards = function() {
+		if (MyAvatar.sessionUUID !== this.owner.sessionUUID) { return; }
+
 		for (let i = 0; i < this.cards.length; i++) {
 			const row = Math.floor(i / 5);
 			const columnSmooth = ((i + 0.5) / 5) % 1;
@@ -218,6 +224,8 @@
 	};
 
 	this.takeCardOwnership = function(_id, args) {
+		if (MyAvatar.sessionUUID !== this.owner.sessionUUID) { return; }
+
 		const card = args[0];
 		this.cards.push(card);
 		this.cardTargetTransforms.set(card, { position: Vector3.ZERO, rotation: Quaternion.IDENTITY });
@@ -231,6 +239,8 @@
 	};
 
 	this.dropCardOwnership = function(_id, args) {
+		if (MyAvatar.sessionUUID !== this.owner.sessionUUID) { return; }
+
 		const card = args[0];
 		const index = this.cards.indexOf(card);
 
@@ -249,6 +259,7 @@
 	};
 
 	this.lockPosition = function() {
+		if (MyAvatar.sessionUUID !== this.owner.sessionUUID) { return; }
 		this.positionLocked = true;
 
 		Entities.editEntity(this.lockButton, {
@@ -262,6 +273,7 @@
 	};
 
 	this.unlockPosition = function() {
+		if (MyAvatar.sessionUUID !== this.owner.sessionUUID) { return; }
 		this.positionLocked = false;
 
 		Entities.editEntity(this.lockButton, {
@@ -275,6 +287,7 @@
 	};
 
 	this.unload = function() {
+		if (MyAvatar.sessionUUID !== this.owner.sessionUUID) { return; }
 		Entities.deleteEntity(this.sprite);
 		Entities.deleteEntity(this.drawButton);
 		Entities.deleteEntity(this.ownerNameplate);
@@ -285,14 +298,17 @@
 	};
 
 	this.startNearGrab = function(_id, _args) {
+		if (MyAvatar.sessionUUID !== this.owner.sessionUUID) { return; }
 		callEntityMethod(this.holderID, "lockPosition");
 	};
 
 	this.startDistanceGrab = function(_id, _args) {
+		if (MyAvatar.sessionUUID !== this.owner.sessionUUID) { return; }
 		callEntityMethod(this.holderID, "lockPosition");
 	};
 
 	HMD.displayModeChanged.connect(vr => {
+		if (MyAvatar.sessionUUID !== this.owner.sessionUUID) { return; }
 		if (vr) { callEntityMethod(this.holderID, "lockPosition"); }
 	});
 })
