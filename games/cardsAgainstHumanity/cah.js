@@ -14,12 +14,21 @@
 	/** @type {string} */ const ICON_CLEANUP = Script.resolvePath("./put_away.png");
 	/** @type {string} */ const ICON_DRAW_CARD = Script.resolvePath("./deal_card.png");
 	/** @type {string} */ const ICON_DELETE = Script.resolvePath("./delete.png");
+	/** @type {string} */ const ICON_SPAWN_HANDHOLDER = Script.resolvePath("./spawn_handholder.png");
 	/** @type {string} */ const FONT = Script.resolvePath("./Inter.arfont");
 
-	const callEntityMethod = (
-		Script.context === "entity_server" ?
+	const ON_SERVER = Script.context === "entity_server";
+
+	const callEntityMethodStr = (
+		ON_SERVER ?
 		"callEntityServerMethod" :
 		"callEntityMethod"
+	);
+
+	const callEntityMethod = (
+		ON_SERVER ?
+		Entities.callEntityServerMethod :
+		Entities.callEntityMethod
 	);
 
 	const CARD_FADEIN_PROPS = {
@@ -86,7 +95,16 @@
 	/** @member {boolean} */ this.quittable = true;
 
 	/** @member {string[]} */
-	this.remotelyCallable = ["quit", "cleanup", "drawWhiteCard", "drawBlackCard", "deleteAll"];
+	this.remotelyCallable = [
+		"quit",
+		"cleanup",
+		"drawWhiteCard",
+		"drawBlackCard",
+		"deleteAll",
+
+		"spawnHandholder",
+		"drawWhiteCardToHand",
+	];
 
 	/** @member {string[]} */ this.cardEntities = [];
 	/** @member {string[]} */ this.guiEntities = [];
@@ -124,7 +142,7 @@
 			script: `(function() { this.mousePressOnEntity = (eid, e) => {
 				if (e.button !== "Primary") { return; }
 				if (Settings.getValue("io.highfidelity.isEditing", false)) { return; }
-				Entities.${callEntityMethod}(${JSON.stringify(this.rootID)}, "drawWhiteCard");
+				Entities.${callEntityMethodStr}(${JSON.stringify(this.rootID)}, "drawWhiteCard");
 			}; })`,
 			fadeOutMode: "enabled",
 			fadeOut: CARD_FADEOUT_PROPS,
@@ -143,7 +161,7 @@
 			script: `(function() { this.mousePressOnEntity = (eid, e) => {
 				if (e.button !== "Primary") { return; }
 				if (Settings.getValue("io.highfidelity.isEditing", false)) { return; }
-				Entities.${callEntityMethod}(${JSON.stringify(this.rootID)}, "drawBlackCard");
+				Entities.${callEntityMethodStr}(${JSON.stringify(this.rootID)}, "drawBlackCard");
 			}; })`,
 			fadeOutMode: "enabled",
 			fadeOut: CARD_FADEOUT_PROPS,
@@ -174,7 +192,7 @@
 				parentID: this.rootID,
 				dimensions: [0.15, 0.2, 0.2],
 				keepAspectRatio: true,
-				localPosition: [-0.2, 0.5, -0.15],
+				localPosition: [-0.25, 0.5, -0.15],
 				imageURL: ICON_QUIT,
 				emissive: true,
 				collisionless: true,
@@ -182,7 +200,7 @@
 				script: `(function() { this.mousePressOnEntity = (eid, e) => {
 					if (e.button !== "Primary") { return; }
 					if (Settings.getValue("io.highfidelity.isEditing", false)) { return; }
-					Entities.${callEntityMethod}(${JSON.stringify(this.rootID)}, "quit");
+					Entities.${callEntityMethodStr}(${JSON.stringify(this.rootID)}, "quit");
 				}; })`,
 				fadeOutMode: "enabled",
 				fadeOut: CARD_FADEOUT_PROPS,
@@ -194,7 +212,7 @@
 			parentID: this.rootID,
 			dimensions: [0.2, 0.2, 0.2],
 			keepAspectRatio: true,
-			localPosition: [this.quittable ? 0.15 : 0, 0.5, -0.15],
+			localPosition: [0, 0.5, -0.15],
 			imageURL: ICON_CLEANUP,
 			emissive: true,
 			collisionless: true,
@@ -202,7 +220,26 @@
 			script: `(function() { this.mousePressOnEntity = (eid, e) => {
 				if (e.button !== "Primary") { return; }
 				if (Settings.getValue("io.highfidelity.isEditing", false)) { return; }
-				Entities.${callEntityMethod}(${JSON.stringify(this.rootID)}, "cleanup");
+				Entities.${callEntityMethodStr}(${JSON.stringify(this.rootID)}, "cleanup");
+			}; })`,
+			fadeOutMode: "enabled",
+			fadeOut: CARD_FADEOUT_PROPS,
+		}));
+
+		this.guiEntities.push(Entities.addEntity({
+			type: "Image",
+			parentID: this.rootID,
+			dimensions: [0.2, 0.2, 0.2],
+			keepAspectRatio: true,
+			localPosition: [0.25, 0.5, -0.15],
+			imageURL: ICON_SPAWN_HANDHOLDER,
+			emissive: true,
+			collisionless: true,
+			grab: { grabbable: false },
+			script: `(function() { this.mousePressOnEntity = (eid, e) => {
+				if (e.button !== "Primary") { return; }
+				if (Settings.getValue("io.highfidelity.isEditing", false)) { return; }
+				Entities.${callEntityMethodStr}(${JSON.stringify(this.rootID)}, "spawnHandHolder", [MyAvatar.sessionUUID]);
 			}; })`,
 			fadeOutMode: "enabled",
 			fadeOut: CARD_FADEOUT_PROPS,
@@ -294,9 +331,9 @@
 	};
 
 	this.tryDiscard = function() {
-		const { position: center } = Entities.getEntityProperties(this.discardAreaEntity, "position");
+		const { position = [0, 0, 0] } = Entities.getEntityProperties(this.discardAreaEntity, "position");
 
-		const candidates = Entities.findEntitiesByTags(["discardable"], center, DISCARD_AREA_RADIUS / 2);
+		const candidates = Entities.findEntitiesByTags(["discardable"], position, DISCARD_AREA_RADIUS / 2);
 		for (const e of candidates) {
 			Entities.deleteEntity(e);
 
@@ -341,13 +378,20 @@
 			lineHeight: 0.02,
 
 			// HACK: Entities.findEntities can only see entities with a server script on them
-			serverScripts: "(function() {})",
+			serverScripts: "(function(){})",
+			script: black ? undefined : Script.resolvePath("./white_card.js"),
 		});
 
 		this.cardEntities.push(card);
+
+		return card;
 	};
 
 	this.drawWhiteCard = function() {
+		if (this.whiteCardDeck.length === 0) {
+			return null;
+		}
+
 		let choice = Math.floor(Math.random() * this.whiteCardDeck.length);
 		const text = this.whiteCardDeck[choice];
 		this.whiteCardDeck.splice(choice, 1);
@@ -370,10 +414,14 @@
 			Entities.editEntity(this.whiteDeckEntity, { visible: false });
 		}
 
-		this.drawCard(false, text);
+		return this.drawCard(false, text);
 	};
 
 	this.drawBlackCard = function() {
+		if (this.blackCardDeck.length === 0) {
+			return null;
+		}
+
 		let choice = Math.floor(Math.random() * this.blackCardDeck.length);
 		const text = this.blackCardDeck[choice];
 		this.blackCardDeck.splice(choice, 1);
@@ -396,7 +444,35 @@
 			Entities.editEntity(this.blackDeckEntity, { visible: false });
 		}
 
-		this.drawCard(true, text);
+		return this.drawCard(true, text);
+	};
+
+	this.drawWhiteCardToHand = function(_id, args) {
+		const handID = args[0];
+		const card = this.drawWhiteCard();
+
+		if (card === null) { return; }
+
+		callEntityMethod(handID, "takeCardOwnership", [card]);
+	};
+
+	this.spawnHandHolder = function(_id, args) {
+		const holder = Entities.addEntity({
+			type: "Sphere",
+			parentID: this.rootID,
+			tags: ["card hand holder", "discardable"],
+			alpha: 0,
+			dimensions: [0.1, 0.1, 0.1],
+			localPosition: [0, 0.2, 0.5],
+			collisionless: true,
+			grab: { grabbable: true },
+			userData: JSON.stringify({ ownerID: args[0] }),
+			script: ON_SERVER ? undefined : Script.resolvePath("./handholder.js"),
+			serverScripts: ON_SERVER ? Script.resolvePath("./handholder.js") : undefined,
+		});
+
+		this.guiEntities.push(holder);
+		return holder;
 	};
 
 	this.cleanup = function() {
