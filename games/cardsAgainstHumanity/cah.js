@@ -17,7 +17,7 @@
 	/** @type {string} */ const ICON_SPAWN_HANDHOLDER = Script.resolvePath("./spawn_handholder.png");
 	/** @type {string} */ const FONT = Script.resolvePath("./Inter.arfont");
 
-	const ON_SERVER = Script.context === "entity_server";
+	const ON_SERVER = true;
 
 	const callEntityMethodStr = (
 		ON_SERVER ?
@@ -102,7 +102,7 @@
 		"drawBlackCard",
 		"deleteAll",
 
-		"spawnHandholder",
+		"spawnHandHolder",
 		"drawWhiteCardToHand",
 	];
 
@@ -117,6 +117,15 @@
 
 	this.preload = function(eid) {
 		this.rootID = eid;
+
+		// delete any children that might be lingering from a previous run
+		{
+			const children = Entities.getChildrenIDs(this.rootID);
+
+			for (const child of children) {
+				Entities.deleteEntity(child);
+			}
+		}
 
 		let userData = {};
 		try {
@@ -237,9 +246,10 @@
 			collisionless: true,
 			grab: { grabbable: false },
 			script: `(function() { this.mousePressOnEntity = (eid, e) => {
-				if (e.button !== "Primary") { return; }
+				console.info(eid, "spawnHandHolder");
+				if (!e.isPrimaryButton) { return; }
 				if (Settings.getValue("io.highfidelity.isEditing", false)) { return; }
-				Entities.${callEntityMethodStr}(${JSON.stringify(this.rootID)}, "spawnHandHolder", [MyAvatar.sessionUUID]);
+				Entities.${callEntityMethodStr}(${JSON.stringify(this.rootID)}, "spawnHandHolder", [MyAvatar.sessionUUID, MyAvatar.sessionDisplayName]);
 			}; })`,
 			fadeOutMode: "enabled",
 			fadeOut: CARD_FADEOUT_PROPS,
@@ -453,10 +463,14 @@
 
 		if (card === null) { return; }
 
-		callEntityMethod(handID, "takeCardOwnership", [card]);
+		Script.setTimeout(() => {
+			console.log("calling takeCardOwnership on", handID, card);
+			callEntityMethod(handID, "takeCardOwnership", [card]);
+		}, 1000);
 	};
 
 	this.spawnHandHolder = function(_id, args) {
+		console.info(this.rootID, "spawnHandHolder", args[0], args[1]);
 		const holder = Entities.addEntity({
 			type: "Sphere",
 			parentID: this.rootID,
@@ -466,8 +480,8 @@
 			localPosition: [0, 0.2, 0.5],
 			collisionless: true,
 			grab: { grabbable: true },
-			userData: JSON.stringify({ ownerID: args[0] }),
-			script: ON_SERVER ? undefined : Script.resolvePath("./handholder.js"),
+			userData: JSON.stringify({ ownerID: args[0], ownerName: args[1] }),
+			script: ON_SERVER ? Script.resolvePath("./handholder_c.js") : Script.resolvePath("./handholder.js"),
 			serverScripts: ON_SERVER ? Script.resolvePath("./handholder.js") : undefined,
 		});
 
