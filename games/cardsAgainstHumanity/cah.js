@@ -388,7 +388,7 @@
 
 			// HACK: Entities.findEntities can only see entities with a server script on them
 			serverScripts: "(function(){})",
-			script: black ? undefined : Script.resolvePath("./white_card.js"),
+			script: black ? undefined : Script.resolvePath(`./white_card.js?q=${Date.now()}`),
 		});
 
 		this.cardEntities.push(card);
@@ -479,7 +479,7 @@
 			collisionless: true,
 			grab: { grabbable: true },
 			userData: JSON.stringify({ ownerID: args[0], ownerName: args[1] }),
-			script: Script.resolvePath("./handholder.js"),
+			script: Script.resolvePath(`./handholder.js?q=${Date.now()}`),
 		});
 
 		// not technically a card, but clean it up when the cleanup button is clicked
