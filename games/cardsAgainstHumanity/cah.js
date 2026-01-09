@@ -116,6 +116,7 @@
 	this.discardAreaInterval = {};
 
 	this.handHolders = new Map();
+	this.playersWithHandHolders = new Set();
 
 	this.preload = function(eid) {
 		this.rootID = eid;
@@ -354,7 +355,11 @@
 
 			this.whiteCardPool.splice(cardIndex, 1);
 
-			this.handHolders.delete(e);
+			const handHolderPlayer = this.handHolders.get(e);
+			if (handHolderPlayer) {
+				this.handHolders.delete(e);
+				this.playersWithHandHolders.delete(handHolderPlayer);
+			}
 		}
 	};
 
@@ -474,7 +479,7 @@
 
 	this.spawnHandHolder = function(_id, args) {
 		// don't spawn more than one holder per player
-		if (this.handHolders.get(args[0])) { return; }
+		if (this.playersWithHandHolders.has(args[0])) { return; }
 
 		const holder = Entities.addEntity({
 			type: "Sphere",
@@ -490,6 +495,7 @@
 		});
 
 		this.handHolders.set(holder, args[0]);
+		this.playersWithHandHolders.set(args[0]);
 
 		return holder;
 	};
