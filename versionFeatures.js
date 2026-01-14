@@ -53,4 +53,6 @@ module.exports = {
 	// OpenVR supports controller velocities already
 	controllerVelocities: !Controller.getDeviceNames().includes("OpenXR"),
 	extendedXRInputs: Controller?.Hardware?.OpenXR?.LeftHasPrimary !== undefined,
+
+	utilMath: builtinScript("utilMath.js"),
 };
