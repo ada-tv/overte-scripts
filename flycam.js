@@ -50,6 +50,9 @@ function startCamera() {
 	camState.rotation = quat(Camera.orientation).toEulerDegrees();
 	camState.velocity = vec3(0, 0, 0);
 
+	camState.rotation.x = 0;
+	camState.rotation.z = 0;
+
 	Camera.mode = "independent";
 }
 
@@ -130,6 +133,7 @@ Controller.mouseMoveEvent.connect(e => {
 
 	camState.rotation.y += -mouseState.dx / 8;
 	camState.rotation.x += -mouseState.dy / 8;
+	camState.rotation.z = 0;
 	camState.rotation.x = clamp(camState.rotation.x, -89.9, 89.9);
 });
 
