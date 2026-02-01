@@ -28,11 +28,13 @@
 
 			Controller.actionEvent.connect(this.actionEvent);
 
+			const { localDimensions } = Entities.getEntityProperties(selfID, "localDimensions");
+
 			visualID = Entities.addEntity({
 				type: "Text",
 				parentID: selfID,
 				localRotation: Quat.fromPitchYawRollDegrees(-90, 180, 0),
-				localDimensions: [0.3, 0.3, 0.1],
+				localDimensions: [localDimensions.x, localDimensions.z, 0.1],
 				text: "Sit",
 				unlit: true,
 				backgroundAlpha: 0.7,
@@ -42,6 +44,7 @@
 				alignment: "center",
 				verticalAlignment: "center",
 				ignorePickIntersection: true,
+				lineHeight: 0.1 * (localDimensions.z / 0.3),
 			}, "local");
 		};
 
@@ -54,9 +57,12 @@
 				Settings.getValue(EDIT_SETTING)
 			) { return; }
 
-			const {position, rotation} = Entities.getEntityProperties(selfID, ["position", "rotation"]);
-			previousAvatarXform = [MyAvatar.position, MyAvatar.orientation];
-			MyAvatar.beginSit(Vec3.sum(position, Vec3.multiplyQbyV(rotation, [0, 0.1, 0])), rotation);
+			const { position, rotation } = Entities.getEntityProperties(selfID, ["position", "rotation"]);
+			previousAvatarXform = [ MyAvatar.position, MyAvatar.orientation ];
+
+			// TODO: is scale or sensorToWorldScale more appropriate here?
+			const scale = MyAvatar.scale;
+			MyAvatar.beginSit(Vec3.sum(position, Vec3.multiplyQbyV(rotation, [0, 0.1 * scale, 0])), rotation);
 			Messages.sendLocalMessage(MSG_CHANNEL, JSON.stringify({ seatID: selfID, sitting: true }));
 			Entities.editEntity(visualID, { visible: false });
 			isSitting = true;
