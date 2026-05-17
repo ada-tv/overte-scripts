@@ -1,7 +1,7 @@
 (function() { "use strict"; try {
 	const PLACES_API = "https://mv.overte.org/server";
 	const PROTOCOL = "ViLohxhZMTalcuUKwgs63g=="; // Window.protocolSignature();
-	const FONT = "Roboto";
+	const FONT = "https://files.thingvellir.net/NotoSans-Regular.arfont";
 	const PLATTER_RADIUS = 2;
 	const ORB_RADIUS = 0.2;
 
@@ -10,8 +10,27 @@
 	let loadingVisual;
 	let orbs = new Map();
 
-	function createWorldOrb(pos, name, url, thumbnailURL, userCount) {
-		const color = userCount > 0 ? [1, 0.25, 1] : [0.25, 0, 1];
+	function createWorldOrb(pos, placeData, url) {
+		const name = placeData.name;
+		const thumbnailURL = placeData.thumbnail;
+		const userCount = placeData.current_attendance;
+
+		let color;
+
+		if (
+			Script.context == "entity_client" &&
+			globalThis.location?.hostname == placeData.domain.name
+		) {
+			color = [1, 0.5, 0];
+		} else if (!placeData.domain.active) {
+			color = [0, 0, 0];
+		} else if (placeData.domain.protocol_version !== PROTOCOL) {
+			color = [1, 0, 0];
+		} else if (userCount > 0) {
+			color = [1, 0.3, 0.7];
+		} else {
+			color = [0.5, 0.1, 1];
+		}
 
 		const entity = Entities.addEntity({
 			type: "Sphere",
@@ -25,7 +44,6 @@
 			grab: { grabbable: true },
 			script: `(function() {
 	this.mouseDoublePressOnEntity = function(id, ev) {
-		console.info("i was double clicked");
 		if (!ev.isPrimaryButton) { return; }
 		location.handleLookupString(${JSON.stringify(url)});
 	}
@@ -45,8 +63,9 @@
 					albedo: [0, 0, 0],
 					shade: [0, 0, 0],
 					emissiveMap: thumbnailURL,
+					opacity: thumbnailURL ? 1.0 : 0.75,
 					parametricRim: color,
-					parametricRimFresnelPower: 2,
+					parametricRimFresnelPower: 1.5,
 					rimLightingMix: 0,
 					cullFaceMode: "CULL_FRONT",
 				},
@@ -64,14 +83,39 @@
 			backgroundAlpha: 0,
 			lineHeight: 0.07,
 			dimensions: [1, 0.2, 0.1],
-			localPosition: [0, 0.2, 0],
+			localPosition: [0, ORB_RADIUS + 0.02, 0],
 			billboardMode: "full",
 			grab: { grabbable: false },
 			ignorePickIntersection: true,
 			collisionless: true,
 			textEffect: "outline fill",
 			textEffectColor: [0, 0, 0],
-			textEffectThickness: 0.45,
+			textEffectThickness: 0.4,
+			textAlpha: 0.99,
+			font: FONT,
+		});
+
+		Entities.addEntity({
+			type: "Text",
+			name: `WorldOrb Creator: ${name}`,
+			parentID: entity,
+			alignment: "center",
+			verticalAlignment: "top",
+			text: placeData.managers[0] ?? placeData.domain.label,
+			unlit: true,
+			backgroundAlpha: 0,
+			lineHeight: 0.05,
+			dimensions: [1, 0.2, 0.1],
+			localPosition: [0, -(ORB_RADIUS + 0.02), 0],
+			billboardMode: "full",
+			grab: { grabbable: false },
+			ignorePickIntersection: true,
+			collisionless: true,
+			textEffect: "outline fill",
+			textEffectColor: [0, 0, 0],
+			textEffectThickness: 0.4,
+			textColor: [192, 192, 192],
+			textAlpha: 0.99,
 			font: FONT,
 		});
 
@@ -106,10 +150,8 @@
 
 			createWorldOrb(
 				pos,
-				place.name,
-				`hifi://${place.name}${place.path}`,
-				place.thumbnail,
-				place.current_attendance
+				place,
+				`hifi://${place.name}${place.path}`
 			);
 
 			// debug
@@ -169,13 +211,14 @@
 			unlit: true,
 			textEffect: "outline fill",
 			textEffectColor: [0, 0, 0],
-			textEffectThickness: 0.3,
+			textEffectThickness: 0.4,
 			alignment: "center",
 			verticalAlignment: "center",
 			localPosition: [0, 0.3, 0],
 			grab: { grabbable: false },
 			ignorePickIntersection: true,
 			collisionless: true,
+			textAlpha: 0.99,
 			font: FONT,
 		});
 
@@ -188,13 +231,17 @@
 
 		xhr.timeout = 10 * 1000;
 		xhr.onreadystatechange = () => {
+			Entities.editEntity(loadingVisual, {
+				text: `Loading... (${xhr.response.length}/${xhr.getResponseHeader("Content-Length")})`,
+			});
+
 			if (xhr.readyState !== 4) { return; }
 
 			try {
 				console.debug(`Parsing places list: ${xhr.status} ${xhr.statusText} ${xhr.errorCode}`);
 				const places = JSON.parse(xhr.responseText).data.places;
 
-				spawnOrbs(places.filter(a => a.domain.protocol_version === PROTOCOL));
+				spawnOrbs(places);
 
 				Entities.deleteEntity(loadingVisual);
 				loadingVisual = undefined;
