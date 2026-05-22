@@ -37,6 +37,8 @@
 			textEffectThickness: 0.3,
 			alignment: "center",
 			verticalAlignment: "center",
+			fadeInMode: "disabled",
+			fadeOutMode: "disabled",
 		}, "local");
 
 		Messages.subscribe("WorldUI");

@@ -35,6 +35,8 @@
 			grab: { grabbable: false },
 			unlit: true,
 			color: "#eeeeee",
+			fadeInMode: "disabled",
+			fadeOutMode: "disabled",
 		}, "local");
 
 		this.check = Entities.addEntity({
@@ -54,6 +56,8 @@
 			],
 			grab: { grabbable: false },
 			ignorePickIntersection: true,
+			fadeInMode: "disabled",
+			fadeOutMode: "disabled",
 		}, "local");
 
 		if (typeof(this.data.text) === "string") {
@@ -73,6 +77,8 @@
 				textEffectThickness: 0.4,
 				alignment: "left",
 				verticalAlignment: "center",
+				fadeInMode: "disabled",
+				fadeOutMode: "disabled",
 			}, "local");
 		}
 
