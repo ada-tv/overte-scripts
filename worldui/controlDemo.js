@@ -18,7 +18,7 @@
 			ignorePickIntersection: true,
 			grab: { grabbable: false },
 			script: Script.resolvePath("./button.js"),
-		}, "local");
+		});
 
 		this.checkbox = Entities.addEntity({
 			type: "Empty",
@@ -28,7 +28,7 @@
 			grab: { grabbable: false },
 			script: Script.resolvePath("./checkbox.js"),
 			userData: JSON.stringify({ checked: false, text: "Checkbox" }),
-		}, "local");
+		});
 
 		Messages.subscribe("WorldUI");
 		Messages.messageReceived.connect(this.#messageCallback);
