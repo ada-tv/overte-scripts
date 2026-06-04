@@ -11,6 +11,7 @@
 	/** @type {object} */ data = {};
 	/** @type {boolean} */ checked = false;
 	/** @type {number} */ animTime = 1.0;
+	/** @type {boolean} */ localOnly = false;
 
 	preload(id) {
 		this.id = id;
@@ -25,6 +26,10 @@
 
 		if (typeof(this.data.name) === "string") {
 			this.name = this.data.name;
+		}
+
+		if (typeof(this.data.localOnly) === "boolean") {
+			this.localOnly = this.data.localOnly;
 		}
 
 		this.control = Entities.addEntity({
@@ -60,16 +65,18 @@
 			fadeOutMode: "disabled",
 		}, "local");
 
+		const width = this.data.width ?? 0.5;
+
 		if (typeof(this.data.text) === "string") {
 			this.text = Entities.addEntity({
 				type: "Text",
 				parentID: this.id,
 				text: this.data.text ?? "Checkbox",
-				localDimensions: [0.5, 0.1, 0],
-				localPosition: [0.3, 0, 0],
+				localDimensions: [width, 0.1, 0],
+				localPosition: [(width / 2) + 0.05, 0, 0],
 				backgroundAlpha: 0,
 				grab: { grabbable: false },
-				lineHeight: 0.08,
+				lineHeight: this.data.lineHeight ?? 0.08,
 				unlit: this.data.unlit ?? true,
 				leftMargin: 0.025,
 				textEffect: "outline fill",
@@ -132,7 +139,7 @@
 				target_id: this.id,
 				target_name: this.name,
 				set_properties: { checked: !this.checked },
-			}));
+			}), this.localOnly);
 		}
 	};
 

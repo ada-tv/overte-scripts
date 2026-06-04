@@ -20,6 +20,7 @@
 	/** @type {number} */ lineHeight = 0.08;
 	/** @type {Array<number>} */ textColor = [0, 0, 0, 1];
 	/** @type {Array<number>} */ backgroundColor = [0.93, 0.93, 0.93, 1];
+	/** @type {boolean} */ localOnly = false;
 
 	preload(id) {
 		this.id = id;
@@ -44,6 +45,10 @@
 		if (this.data.backgroundColor) {
 			this.backgroundColor = this.data.backgroundColor;
 			if (this.backgroundColor.length < 4) { this.backgroundColor.push(1); }
+		}
+
+		if (typeof(this.data.localOnly) === "boolean") {
+			this.localOnly = this.data.localOnly;
 		}
 
 		this.control = Entities.addEntity({
@@ -154,7 +159,7 @@
 				target_id: this.id,
 				target_name: this.name,
 				click: {},
-			}));
+			}), this.localOnly);
 		}
 	};
 
