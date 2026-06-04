@@ -6,6 +6,7 @@
 	/** @type {Uuid} */ id;
 	/** @type {Uuid} */ screen;
 	/** @type {Uuid} */ checkbox;
+	/** @type {Uuid} */ copyButton;
 	/** @type {object} */ userData;
 	/** @type {Array<number>} */ size = [2, 1];
 	/** @type {string?} */ url = "";
@@ -20,7 +21,7 @@
 		this.screen = Entities.addEntity({
 			type: "Text",
 			parentID: this.id,
-			text: `${this.url ? this.url : "No content"}\nCheck "show screen" in the top-right`,
+			text: this.url ? `${this.url}\n\nCheck "show screen" in the top-right` : "No content",
 			localDimensions: [...this.size, 0],
 			unlit: true,
 			textEffect: "outline fill",
@@ -75,10 +76,36 @@
 			script: Script.resolvePath("./checkbox.js"),
 		}, "local");
 
+		this.copyButton = Entities.addEntity({
+			type: "Empty",
+			parentID: this.id,
+			localPosition: [
+				(this.size[0] / 2) + 0.25,
+				(this.size[1] / 2) - 0.16,
+				0,
+			],
+			userData: JSON.stringify({
+				text: "Copy URL",
+				localOnly: true,
+				lineHeight: 0.05,
+				backgroundColor: [0.25, 0.22, 0.28],
+				textColor: [0.93, 0.93, 0.93],
+			}),
+			grab: { grabbable: false },
+			ignorePickIntersection: true,
+			script: Script.resolvePath("./button.js"),
+		}, "local");
+
 		this.#spawnPlaceholder();
 
 		Messages.subscribe("WorldUI");
 		Messages.messageReceived.connect(this.#messageCallback);
+	}
+
+	unload() {
+		Entities.deleteEntity(this.checkbox);
+		Entities.deleteEntity(this.copyButton);
+		Messages.messageReceived.disconnect(this.#messageCallback);
 	}
 
 	#messageCallback = (channel, rawMsg, _sender, _local) => {
@@ -91,7 +118,9 @@
 			return;
 		}
 
-		if (msg.target_id === this.checkbox && this.url) {
+		if (msg.target_id === this.copyButton && msg.click) {
+			Window.copyToClipboard(this.url);
+		} else if (msg.target_id === this.checkbox && this.url) {
 			if (msg.set_properties.checked) {
 				this.#spawnScreen();
 			} else {
