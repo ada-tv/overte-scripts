@@ -20,7 +20,7 @@
 		this.screen = Entities.addEntity({
 			type: "Text",
 			parentID: this.id,
-			text: this.url ? this.url : "No content",
+			text: `${this.url ? this.url : "No content"}\nCheck "show screen" in the top-right`,
 			localDimensions: [...this.size, 0],
 			unlit: true,
 			textEffect: "outline fill",
@@ -69,7 +69,6 @@
 				localOnly: true,
 				lineHeight: 0.08,
 				width: 1,
-				unlit: false,
 			}),
 			grab: { grabbable: false },
 			ignorePickIntersection: true,
