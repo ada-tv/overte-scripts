@@ -4,83 +4,111 @@
 // Usage: Server script on Empty entity
 (class {
 	/** @type {boolean} */ setupValid = false;
-	/** @type {object} */ userData;
+	/** @type {object} */ userData = {};
 	/** @type {Uuid} */ id;
 	/** @type {Uuid} */ screen;
-	/** @type {boolean} */ screenIsWeb = false;
-	/** @type {Map<Uuid, object>} */ buttons;
+	/** @type {Map<Uuid, object>} */ buttons = new Map();
+	/** @type {Uuid?} */ prevClickedButton = null;
+
+	BUTTON_INACTIVE_COLOR = [0.25, 0.22, 0.28];
+	BUTTON_ACTIVE_COLOR = [0.25, 0.55, 0.24];
+
+	#spawnScreen(url) {
+		const size = this.userData.screen?.size ?? [2, 1];
+		const pos = this.userData.screen?.position ?? [0, 0, 0];
+
+		this.screen = Entities.addEntity({
+			type: "Empty",
+			parentID: this.id,
+			grab: { grabbable: false },
+			ignorePickIntersection: true,
+			localPosition: pos,
+			script: Script.resolvePath("./localScreen.js"),
+			userData: JSON.stringify({
+				size: size,
+				url,
+				dpi: this.userData.screen?.dpi,
+			}),
+		});
+	}
 
 	#showError(msg) {
-		this.screenIsWeb = false;
-
 		if (this.screen) {
 			Entities.deleteEntity(this.screen);
 		}
 
-		const size = this.userData.screen.size ?? [2, 1];
+		const size = this.userData.screen?.size ?? [2, 1];
 
 		this.screen = Entities.addEntity({
 			type: "Text",
+			parentID: this.id,
 			unlit: true,
-			localPosition: this.userData.screen.position ?? [0, 0, -0.1],
+			localPosition: this.userData.screen?.position ?? [0, 0, 0.1],
 			localDimensions: [...size, 0],
 			lineHeight: 0.07,
-			textAlpha: 0.999,
+			textEffect: "outline fill",
+			textEffectColor: [0, 0, 0],
 			textColor: [255, 144, 128],
 			text: msg,
 			font: "Courier",
 			grab: { grabbable: false },
+			collisionless: true,
 		});
 	}
 
 	#turnOffScreen() {
-		this.screenIsWeb = false;
-
-		if (this.screen) {
-			Entities.deleteEntity(this.screen);
+		if (!this.screen) {
+			this.#spawnScreen(null);
+			return;
 		}
 
-		this.screen = Entities.addEntity({
-			type: "Box",
-			localPosition: this.userData.screen.position,
-			localDimensions: [...this.userData.screen.size, 0],
-			color: [0, 0, 0],
-			grab: { grabbable: false },
+		Messages.sendMessage("WorldUI", JSON.stringify({
+				target_id: this.screen,
+				set_properties: { url: null },
+		}));
+
+		Entities.editEntity(this.screen, {
+			userData: JSON.stringify({
+				size: this.userData.screen?.size,
+				url: null,
+				dpi: this.userData.screen?.dpi,
+			}),
 		});
 	}
 
 	#setScreenURL(url) {
-		if (this.screenIsWeb && this.screen) {
-			Entities.editEntity(this.screen, { sourceUrl: url });
+		if (!this.screen) {
+			this.#spawnScreen(url);
 			return;
 		}
 
-		if (this.screen) { Entities.deleteEntity(this.screen); }
+		Messages.sendMessage("WorldUI", JSON.stringify({
+				target_id: this.screen,
+				set_properties: { url },
+		}));
 
-		this.screen = Entities.addEntity({
-			type: "Web",
-			parentID: this.id,
-			localPosition: this.userData.screen.position ?? [0, 0, 0],
-			localDimensions: [...this.userData.screen.size, 0],
-			dpi: this.userData.screen?.dpi ?? 10,
-			sourceUrl: url,
-			maxFPS: 60,
+		Entities.editEntity(this.screen, {
+			userData: JSON.stringify({
+				size: this.userData.screen?.size,
+				url: url,
+				dpi: this.userData.screen?.dpi,
+			}),
 		});
-
-		this.screenIsWeb = true;
 	}
 
 	preload(id) {
 		this.id = id;
 
 		try {
-			this.userData = Entities.getEntityProperties(this.id, "userData").userData;
+			this.userData = JSON.parse(Entities.getEntityProperties(this.id, "userData").userData);
 		} catch (_e) {
-			this.#showError("Error: No config userdata\n{\n  screen: {\n    size: [number, number],\n    position: [number, number, number]?,\n    dpi: number?\n  },\nbuttons: Array<{text: string, url: string}>\n}");
+			this.#showError("Error: No config userdata\n{\n  screen: {\n    size: [number, number],\n    position: [number, number, number]?,\n    dpi: number?\n  },\n  buttons: Array<{text: string, url: string}>\n}");
 			return;
 		}
 
-		if (!this.userData.screen?.size) {
+		console.log(this.userData);
+
+		if (this.userData.screen?.size?.length !== 2) {
 			this.#showError("Error: userData must have field 'screen.size: [number, number]'");
 			return;
 		}
@@ -90,16 +118,20 @@
 			return;
 		}
 
-		this.userData.buttons.push({
+		this.userData.buttons.unshift({
 			text: "Turn off",
 			func: () => this.#turnOffScreen(),
 		});
 
-		const startPos = Vec3.add(
-			this.userData.screen.position,
+		const w = 0.35;
+		const h = 0.1;
+		const pad = 0.01;
+
+		const startPos = Vec3.sum(
+			this.userData.screen.position ?? [0, 0, 0],
 			[
-				(this.userData.screen.size[0] / 2) + 0.2,
-				+this.userData.screen.size[1] / 2,
+				(this.userData.screen.size[0] / 2) + (w / 2) + 0.2,
+				-(h / 2),
 				0,
 			]
 		);
@@ -107,19 +139,15 @@
 		for (let i = 0; i < this.userData.buttons.length; i++) {
 			const button = this.userData.buttons[i];
 
-			const row = Math.floor(i / 6);
-			const column = i % 6;
-
-			const w = 0.35;
-			const h = 0.1;
-			const pad = 0.03;
+			const column = Math.floor(i / 6);
+			const row = i % 6;
 
 			const entity = Entities.addEntity({
 				type: "Empty",
 				parentID: this.id,
 				localPosition: [
 					startPos.x + (column * (w + pad)),
-					startPos.y + (row * (h + pad)),
+					startPos.y - (row * (h + pad)),
 					0.0,
 				],
 				ignorePickIntersection: true,
@@ -128,11 +156,13 @@
 				userData: JSON.stringify({
 					text: button.text,
 					lineHeight: 0.05,
-					textColor: [0.93, 0.93, 0.93, 1],
-					backgroundColor: [0.25, 0.22, 0.28, 0.98],
+					textColor: [0.93, 0.93, 0.93],
+					backgroundColor: i == 0 ? this.BUTTON_ACTIVE_COLOR : this.BUTTON_INACTIVE_COLOR,
 					dimensions: [w, h, 0],
 				}),
 			});
+
+			if (i == 0) { this.prevClickedButton = entity; }
 
 			this.buttons.set(entity, button);
 		}
@@ -165,6 +195,8 @@
 			return;
 		}
 
+		if (!msg.click) { return; }
+
 		const button = this.buttons.get(msg.target_id);
 
 		if (!button) { return; }
@@ -174,6 +206,21 @@
 		} else if (button.url) {
 			this.#setScreenURL(button.url);
 		}
+
+		Messages.sendMessage("WorldUI", JSON.stringify({
+				target_id: this.prevClickedButton,
+				set_properties: {
+					backgroundColor: this.BUTTON_INACTIVE_COLOR,
+				},
+		}));
+
+		Messages.sendMessage("WorldUI", JSON.stringify({
+				target_id: msg.target_id,
+				set_properties: {
+					backgroundColor: this.BUTTON_ACTIVE_COLOR,
+				},
+		}));
+
+		this.prevClickedButton = msg.target_id;
 	};
 })
-
