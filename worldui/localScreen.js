@@ -41,6 +41,7 @@
 			parentID: this.id,
 			sourceUrl: this.url,
 			dpi: this.dpi,
+			maxFPS: 60,
 			localDimensions: [...this.size, 0],
 			grab: { grabbable: false },
 		}, "local");
