@@ -12,6 +12,7 @@
 	/** @type {string?} */ url = "";
 	/** @type {number} */ dpi = 10;
 	/** @type {boolean} */ screenIsWeb = false;
+	/** @type {boolean} */ screenVisible = false;
 
 	#spawnPlaceholder() {
 		this.screenIsWeb = false;
@@ -110,6 +111,24 @@
 		Messages.messageReceived.disconnect(this.#messageCallback);
 	}
 
+	#stateChanged() {
+		if (!this.url || !this.screenVisible) {
+			if (this.screenIsWeb) {
+				this.#spawnPlaceholder();
+			} else {
+				Entities.editEntity(this.screen, {
+					text: this.url ? `${this.url}\n\nCheck "show screen" in the top-right` : "No content",
+				});
+			}
+		} else {
+			if (this.screenIsWeb) {
+				Entities.editEntity(this.screen, { sourceUrl: this.url });
+			} else {
+				this.#spawnScreen();
+			}
+		}
+	}
+
 	#messageCallback = (channel, rawMsg, _sender, _local) => {
 		if (channel !== "WorldUI") { return; }
 
@@ -122,25 +141,15 @@
 
 		if (msg.target_id === this.copyButton && msg.click) {
 			Window.copyToClipboard(this.url);
-		} else if (msg.target_id === this.checkbox && this.url) {
-			if (msg.set_properties.checked) {
-				this.#spawnScreen();
-			} else {
-				this.#spawnPlaceholder();
-			}
+		} else if (msg.target_id === this.checkbox) {
+			this.screenVisible = msg.set_properties.checked;
+			this.#stateChanged();
 		} else if (msg.target_id == this.id) {
 			const props = msg.set_properties;
 
 			if (Object.hasOwn(props, "url")) {
 				this.url = msg.set_properties.url;
-
-				if (!this.url) {
-					this.#spawnPlaceholder();
-				} else if (this.screenIsWeb) {
-					Entities.editEntity(this.screen, { sourceUrl: this.url });
-				} else {
-					Entities.editEntity(this.screen, { text: this.url });
-				}
+				this.#stateChanged();
 			}
 
 			if (Object.hasOwn(props, "size")) {
