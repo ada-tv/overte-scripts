@@ -52,9 +52,9 @@
 			text: this.data.text ?? "Button",
 			localDimensions: this.data.dimensions ?? [0.5, 0.1, 0],
 			localPosition: [0, 0, 0],
-			backgroundAlpha: this.backgroundColor[3] * 255,
+			backgroundAlpha: this.backgroundColor[3],
 			backgroundColor: this.backgroundColor.slice(0, 3).map(c => c * 255),
-			textAlpha: this.textColor[3] * 255,
+			textAlpha: this.textColor[3],
 			textColor: this.textColor.slice(0, 3).map(c => c * 255),
 			grab: { grabbable: false },
 			lineHeight: this.lineHeight,
@@ -102,7 +102,7 @@
 		if (Object.hasOwn(props, "backgroundColor")) {
 			this.backgroundColor = props.backgroundColor;
 			diff.backgroundColor = props.backgroundColor.slice(0, 3).map(c => c * 255);
-			diff.backgroundAlpha = (props.backgroundColor[3] ?? 1.0) * 255;
+			diff.backgroundAlpha = (props.backgroundColor[3] ?? 1.0);
 			diff.textEffectColor = diff.backgroundColor;
 			dirty = true;
 		}
@@ -110,7 +110,7 @@
 		if (Object.hasOwn(props, "textColor")) {
 			this.textColor = props.textColor;
 			diff.textColor = props.textColor.slice(0, 3).map(c => c * 255);
-			diff.textAlpha = (props.textColor[3] ?? 1.0) * 255;
+			diff.textAlpha = (props.textColor[3] ?? 1.0);
 			dirty = true;
 		}
 
