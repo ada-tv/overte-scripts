@@ -28,7 +28,7 @@
 
 			Controller.actionEvent.connect(this.actionEvent);
 
-			const { localDimensions } = Entities.getEntityProperties(selfID, "localDimensions");
+			const { localDimensions, visible } = Entities.getEntityProperties(selfID, ["localDimensions", "visible"]);
 
 			visualID = Entities.addEntity({
 				type: "Text",
@@ -37,7 +37,7 @@
 				localDimensions: [localDimensions.x, localDimensions.z, 0.1],
 				text: "Sit",
 				unlit: true,
-				backgroundAlpha: 0.7,
+				backgroundAlpha: visible ? 0.0 : 0.7,
 				textEffect: "outline fill",
 				textEffectColor: [0, 0, 0],
 				textEffectThickness: 0.4,
