@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: CC0-1.0
 (class {
 	mousePressOnEntity(id, e) {
-		if (e.isPrimary) {
+		if (e.isPrimaryButton) {
 			const url = Entities.getEntityProperties(id, "userData").userData;
 
 			if (url) {
