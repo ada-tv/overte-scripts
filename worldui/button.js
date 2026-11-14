@@ -11,6 +11,8 @@
 	 * @property {number} [lineHeight=0.08]
 	 * @property {Array<number>} [textColor=[0, 0, 0, 1]]
 	 * @property {Array<number>} [backgroundColor=[0.93, 0.93, 0.93, 1]]
+	 * @property {boolean} [localOnly=false]
+	 * @property {boolean} [localAnimation=false]
 	 */
 	/** @type {Uuid} */ id;
 	/** @type {string} */ name;
@@ -21,6 +23,7 @@
 	/** @type {Array<number>} */ textColor = [0, 0, 0, 1];
 	/** @type {Array<number>} */ backgroundColor = [0.93, 0.93, 0.93, 1];
 	/** @type {boolean} */ localOnly = false;
+	/** @type {boolean} */ localAnimation = false;
 
 	preload(id) {
 		this.id = id;
@@ -49,6 +52,10 @@
 
 		if (typeof(this.data.localOnly) === "boolean") {
 			this.localOnly = this.data.localOnly;
+		}
+
+		if (typeof(this.data.localAnimation) === "boolean") {
+			this.localAnimation = this.data.localAnimation;
 		}
 
 		this.control = Entities.addEntity({
@@ -160,6 +167,11 @@
 				target_name: this.name,
 				click: {},
 			}), this.localOnly);
+
+			if (this.localAnimation) {
+				this.animTime = 0.0;
+				Script.update.connect(this.#updateCallback);
+			}
 		}
 	};
 
@@ -179,7 +191,7 @@
 			this.setProperties(msg.set_properties);
 		}
 
-		if (Object.hasOwn(msg, "click")) {
+		if (Object.hasOwn(msg, "click") && !this.localAnimation) {
 			this.animTime = 0.0;
 			Script.update.connect(this.#updateCallback);
 		}
